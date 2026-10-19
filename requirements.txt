@@ -1,2 +1,4 @@
 streamlit
+yfinance
+alpaca-trade-api
 requests
