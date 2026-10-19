@@ -3,3 +3,4 @@ ccxt
 numpy
 pandas
 requests
+plotly
