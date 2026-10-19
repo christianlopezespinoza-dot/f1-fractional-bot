@@ -1,100 +1,75 @@
-import streamlit as st
-import yfinance as yf
-import requests
-import os
-import time
+import streamlit as st, yfinance as yf, requests, time, os
 from datetime import datetime
 import alpaca_trade_api as tradeapi
 
-st.set_page_config(page_title="F1 V15 FINAL", layout="wide")
-st.title("🏎️ F1 V15 FINAL - Fib 0.618 + Telegram F1 Real")
+st.set_page_config(page_title="F1 V15 FINAL - Con Sonido Real")
+st.title("🏎️ F1 V15 FINAL - Fib 0.618 + Sonido Real sin subir")
 
-# --- SECRETS ---
-try:
-    A_KEY = st.secrets["alpaca"]["API_KEY"]
-    A_SECRET = st.secrets["alpaca"]["SECRET"]
-    A_BASE = st.secrets["alpaca"].get("BASE_URL", "https://paper-api.alpaca.markets")
-    HAS_ALPACA = True
-except:
-    st.error("Falta [alpaca] en Secrets")
-    HAS_ALPACA = False
-    st.stop()
+A_KEY = st.secrets["alpaca"]["API_KEY"]
+A_SECRET = st.secrets["alpaca"]["SECRET"]
+A_BASE = st.secrets["alpaca"].get("BASE_URL","https://paper-api.alpaca.markets")
+T_TOKEN = st.secrets["telegram"]["BOT_TOKEN"]
+T_CHAT = st.secrets["telegram"]["CHAT_ID"]
 
-try:
-    T_TOKEN = st.secrets["telegram"]["BOT_TOKEN"]
-    T_CHAT = st.secrets["telegram"]["CHAT_ID"]
-    HAS_TELE = True
-except:
-    HAS_TELE = False
-    st.warning("Falta [telegram] en Secrets - Telegram no sonará")
+# AUDIOS F1 PUBLICOS - NO NECESITAS SUBIR NADA
+F1_LARGO_URL = "https://cdn.pixabay.com/audio/2022/03/24/audio_5a70a1157b.mp3"  # 12s F1 largo
+F1_CORTO_URL = "https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3"  # 2s beep corto
 
-# --- TELEGRAM CON AUDIO REAL ---
 def telegram(msg, largo=True):
-    if not HAS_TELE:
-        return
     try:
-        icono = "🏁🔊🔊🔊 SONIDO F1 LARGO - COMPRA" if largo else "⚠️🔇 SONIDO CORTO - PANICO / VENTA"
+        # Texto
+        icono = "🏁🔊🔊🔊 SONIDO F1 LARGO - COMPRA" if largo else "⚠️ SONIDO CORTO - PANICO"
         url = f"https://api.telegram.org/bot{T_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": T_CHAT,
-            "text": f"{icono}\n{msg}\n⏰ {datetime.now().strftime('%H:%M:%S %d/%m')}",
-            "disable_notification": False
-        }
-        requests.post(url, json=payload, timeout=10)
-
-        # Enviar audio REAL si existe en tu repo
-        nombre_audio = "f1_largo.mp3" if largo else "f1_corto.mp3"
-        if os.path.exists(nombre_audio):
-            url_audio = f"https://api.telegram.org/bot{T_TOKEN}/sendAudio"
-            with open(nombre_audio, 'rb') as audio_file:
-                files = {'audio': audio_file}
-                data = {'chat_id': T_CHAT, 'caption': '🏎️ F1 LARGO - COMPRA' if largo else '🚨 F1 CORTO - PANICO'}
-                requests.post(url_audio, data=data, files=files, timeout=20)
+        requests.post(url, json={"chat_id": T_CHAT, "text": f"{icono}\n{msg}\n{datetime.now().strftime('%H:%M:%S')}", "disable_notification": False}, timeout=10)
+        # Audio real desde URL publica
+        url_audio = f"https://api.telegram.org/bot{T_TOKEN}/sendAudio"
+        audio_url = F1_LARGO_URL if largo else F1_CORTO_URL
+        requests.post(url_audio, json={"chat_id": T_CHAT, "audio": audio_url, "caption": "🏎️ F1 LARGO REAL" if largo else "🚨 PANICO CORTO"}, timeout=15)
     except Exception as e:
-        print(f"Error telegram: {e}")
+        print(e)
 
-# --- ALPACA CLIENT ---
 api = tradeapi.REST(A_KEY, A_SECRET, A_BASE, api_version='v2')
-
-SYMBOL = "AAPL"
-NOTIONAL = 10  # $10 fraccional
-COOLDOWN_SEC = 45
+SYMBOL="AAPL"; NOTIONAL=10; COOLDOWN=45
 
 if "running" not in st.session_state:
-    st.session_state.running = False
-if "logs" not in st.session_state:
-    st.session_state.logs = []
-if "buy_count" not in st.session_state:
-    st.session_state.buy_count = 0
-if "last_buy_time" not in st.session_state:
-    st.session_state.last_buy_time = 0
+    st.session_state.running=False; st.session_state.logs=[]; st.session_state.buy_count=0; st.session_state.last_buy_time=0
 
-col1, col2, col3 = st.columns(3)
-with col1:
+c1,c2,c3=st.columns(3)
+with c1:
     if st.button("🏁 INICIAR V15", type="primary"):
-        st.session_state.running = True
-        telegram("F1 V15 FINAL INICIADO - Bot corriendo... cooldown 45s entre compras", largo=True)
-        st.session_state.logs.append(f"{datetime.now().strftime('%H:%M:%S')} - F1 V15 FINAL INICIADO")
-with col2:
-    if st.button("⏹️ Stop"):
-        st.session_state.running = False
-        st.session_state.logs.append(f"{datetime.now().strftime('%H:%M:%S')} - Bot detenido")
-with col3:
-    if st.button("🚨 BOTÓN PÁNICO - VENDER TODO", type="secondary"):
+        st.session_state.running=True
+        telegram("F1 V15 FINAL INICIADO - Sonido F1 real activado", largo=True)
+        st.session_state.logs.append("INICIADO")
+with c2:
+    if st.button("⏹️ Stop"): st.session_state.running=False
+with c3:
+    if st.button("🚨 PÁNICO VENDER TODO"):
         try:
             api.close_all_positions(cancel_orders=True)
-            st.session_state.running = False
-            msg = "🚨 PANICO ACTIVADO - Vendiendo todo AAPL y cerrando posiciones"
-            st.session_state.logs.append(f"{datetime.now().strftime('%H:%M:%S')} - {msg}")
-            telegram(msg, largo=False)
-            st.success("Pánico ejecutado - Todo vendido")
-        except Exception as e:
-            st.error(f"Error pánico: {e}")
+            st.session_state.running=False
+            telegram("🚨 PANICO - Vendiendo todo", largo=False)
+        except Exception as e: st.error(e)
 
-st.divider()
+def get_fib():
+    h=yf.Ticker(SYMBOL).history(period="1mo")
+    high=h['High'].max(); low=h['Low'].min(); price=h['Close'].iloc[-1]
+    fib=high-(high-low)*0.618
+    return high,low,fib,price
 
-# --- LOGICA FIB 0.618 REAL ---
-def get_fib_level():
-    try:
-        ticker = yf.Ticker(SYMBOL)
-        hist
+if st.session_state.running:
+    high,low,fib,price=get_fib()
+    st.metric(f"{SYMBOL}", f"${price:.2f}", f"Fib 0.618: ${fib:.2f}")
+    now=time.time()
+    cd=int(COOLDOWN-(now-st.session_state.last_buy_time)) if st.session_state.last_buy_time else 0
+    st.info(f"Bot corriendo... cooldown {cd}s" if cd>0 else "LISTO PARA COMPRAR")
+    if price<=fib and (now-st.session_state.last_buy_time)>COOLDOWN:
+        try:
+            order=api.submit_order(symbol=SYMBOL, notional=NOTIONAL, side='buy', type='market', time_in_force='day')
+            st.session_state.buy_count+=1; st.session_state.last_buy_time=now
+            msg=f"✅ BUY #{st.session_state.buy_count} {SYMBOL} Fib:{fib:.2f} Price:{price:.2f} ID:{str(order.id)[:8]} $10"
+            st.session_state.logs.append(msg)
+            telegram(f"✅ COMPRA REAL #{st.session_state.buy_count} {SYMBOL} ${NOTIONAL} Fib:{fib:.2f} Order:{order.id}", largo=True)
+        except Exception as e: st.error(e)
+    time.sleep(5); st.rerun()
+
+for log in reversed(st.session_state.logs[-15:]): st.text(log)
