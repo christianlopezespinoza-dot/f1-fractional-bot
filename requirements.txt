@@ -1,6 +1,4 @@
 streamlit
-ccxt
-numpy
-pandas
+alpaca-trade-api
+python-telegram-bot==20.7
 requests
-plotly
