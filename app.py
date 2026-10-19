@@ -22,7 +22,7 @@ st.markdown("""
 
 col1, col2 = st.columns([1, 4])
 with col1:
-    st.image("https://i.imgur.com/8Km9tLL.png", width=120) # Si no tienes imagen, se ignora
+     # Si no tienes imagen, se ignora
 with col2:
     st.title("🏎️ Fractional F1 Bot — LIVE 0.382 KEY LEVEL")
     st.caption("f(x)=x²/2 | Caputo | Riemann-Liouville | 0.382 Fib | Binance Public + Telegram V12 Fixed")
