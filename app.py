@@ -14,9 +14,15 @@ BINANCE_API = st.secrets.get("BINANCE_API", "")
 BINANCE_SECRET = st.secrets.get("BINANCE_SECRET", "")
 
 # --- 2. UI ---
+st.markdown("""
+<style>
+    .stApp {background: #0e1117;}
+</style>
+""")
+
 col1, col2 = st.columns([1, 4])
 with col1:
-     # Si no tienes imagen, se ignora
+    st.image("https://i.imgur.com/8Km9tLL.png", width=120) # Si no tienes imagen, se ignora
 with col2:
     st.title("🏎️ Fractional F1 Bot — LIVE 0.382 KEY LEVEL")
     st.caption("f(x)=x²/2 | Caputo | Riemann-Liouville | 0.382 Fib | Binance Public + Telegram V12 Fixed")
