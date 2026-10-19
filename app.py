@@ -14,12 +14,6 @@ BINANCE_API = st.secrets.get("BINANCE_API", "")
 BINANCE_SECRET = st.secrets.get("BINANCE_SECRET", "")
 
 # --- 2. UI ---
-st.markdown("""
-<style>
-    .stApp {background: #0e1117;}
-</style>
-""")
-
 col1, col2 = st.columns([1, 4])
 with col1:
      # Si no tienes imagen, se ignora
