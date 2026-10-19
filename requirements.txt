@@ -1,5 +1,4 @@
 streamlit
 yfinance
-requests==2.31.0
-urllib3==1.26.18
-alpaca-trade-api==3.0.2
+requests
+alpaca-py
