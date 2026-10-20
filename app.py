@@ -196,7 +196,7 @@ try:
                 buy_marks=buy_marks[-100:]
                 with open(buy_file,"w") as f: json.dump(buy_marks,f)
                 notificar_f1(symbol=symbol,equity=total,cash=cash,order_id=str(order.id)[:8],monto=monto,auto_on=st.session_state.auto_pilot,cooldown_ok=True)
-                st.toast(f"🛡️ COMPRA ASEGURADA {symbol} ${monto} - Score {score_seguro}/5", icon="🪙")
+                st.toast(f"COMPRA ASEGURADA {symbol} ${monto} - Score {score_seguro}/5", icon="🪙")
                 st.balloons()
         except Exception as e: orden_msg=f"Error {e}"
     elif puede and not puede_seguro:
@@ -253,5 +253,22 @@ try:
 
 except Exception as e: st.error(f"Alpaca: {e}")
 
-st.markdown(f"<div style='display:grid;grid-template-columns:1.2fr 0.6fr 0.7fr;gap:12px;margin:16px 0'><div><div style='color:#FFD700;font-weight:900;font-size:32px'>${price:,.0f}...</div><div style='font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(0,255,136,0.15);color:#00FF88;display:inline-block'>Fib: ${fib:,.2f}</div></div><div><div style='color:#FFD700;font-weight:900;font-size:32px'>{z:.2f}</div><div style='font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(0,255,136,0.15);color:#00FF88;display:inline-block'>Compra si -2</div></div><div><div style='color:#FFD700;font-weight:900;font-size:32px'>{lr*100:.3f}%</div><div style='font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(255,70,70,0.15);color:#FF6B7A;display:inline-block'>-0.8 a -0.05</div></div></div>", unsafe_allow_html=True)
-st.markdown(f"<div style='background:{"#00FF88" if puede_seguro else "#2B2B2B"};colo
+#FIX FINAL - SIN F-STRING ANIDADO
+bg_color = "#00FF88" if puede_seguro else "#2B2B2B"
+txt_color = "#000" if puede_seguro else "#8A93A8"
+status_txt = "✅ ASEGURADO" if puede_seguro else "⛔ BLOQUEADO POR SEGURO"
+st.markdown(f"<div style='background:{bg_color};color:{txt_color};font-weight:900;padding:12px;border-radius:10px;text-align:center'>{sema_txt} • {orden_msg} • {status_txt}</div>", unsafe_allow_html=True)
+
+fig,ax=plt.subplots(figsize=(10,4)); fig.patch.set_facecolor("#10131C"); ax.set_facecolor("#10131C")
+ax.plot(precios,color="#00FF87",linewidth=2.5); ax.axhline(xb,color="#3A8B8B",linewidth=1,alpha=0.8); ax.axhline(fib,color="#FFD500",ls="--",linewidth=1.2)
+ax.scatter([len(precios)-1],[price],s=120,color="#00FF4C",zorder=5,edgecolors="#10131C",linewidths=2)
+ax.tick_params(colors="#6B7280",labelsize=9)
+for sp in ax.spines.values(): sp.set_visible(False)
+st.pyplot(fig)
+b1,b2,b3,b4=st.columns(4)
+with b1: st.markdown(f"<div class='box'>⏱️ <b>24 HORAS</b><br>{ret24:.2f}%</div>", unsafe_allow_html=True)
+with b2: st.markdown(f"<div class='box'>📅 <b>7 DÍAS</b><br>{ret7:.2f}%</div>", unsafe_allow_html=True)
+with b3: st.markdown(f"<div class='box'>📅 <b>30 DÍAS</b><br>{ret30:.2f}%</div>", unsafe_allow_html=True)
+with b4: st.markdown(f"<div class='box'>🏔️ <b>vs MAX 1 AÑO</b><br>{vsmax:.2f}%</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='backtest'>🧠 <b>BACKTEST</b><br>{len(casos)} casos | Prob rebote 24h: {prob:.1f}% • 24h {avg24:.2f}% | 7d {avg7:.2f}%<br>⚠️ {sema_color}: {sema_txt}</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='background:#0B1A13;border:1.5px solid #00FF88;padding:12px;border-radius:10px;margin-top:12px;color:#4ADE80;font-weight:700;font-size:12px'>💎 V45 COMPLETO: {sema_txt} • {orden_msg} • Auto {'ON' if st.session_state.auto_pilot else 'OFF'} • 🪙 {st.session_state.coins} • 🔥 {heat_buys} buys • 🏆 {leader} • Score {score_seguro}/5 {seguro_msg}</div>", unsafe_allow_html=True)
