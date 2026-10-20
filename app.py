@@ -57,3 +57,75 @@ st.markdown("""
 .pro-row {display:flex; gap:12px; margin-top:12px;}
 .pro-box {flex:1; background:#111; border-radius:12px; padding:12px; border-left:4px solid;}
 .pro-box p {margin:4px 0; color:#CCC; font-size:13px;}
+.pro-box b {color:white;}
+</style>
+<div class="pro-card">
+    <div class="pro-title">🏎️ F1 V21 SEMÁFORO - Cómo leer en 30 seg</div>
+    <p style="color:#AAA; font-size:14px;">Sin fórmulas. Solo 3 preguntas para no perder tu poco dinero.</p>
+    <div class="pro-row">
+        <div class="pro-box" style="border-color: gold;">
+            <b>1. ¿Está barato? Fib 0.618</b><p>Línea dorada. Si BTC está abajo de ella, es como aguacate en oferta. $81.5 vs $82 normal.</p>
+        </div>
+        <div class="pro-box" style="border-color: #00FF88;">
+            <b>2. ¿Está regalado? z = -6.96</b><p>z -2 a -7 = pánico. La gente lo remata. Mientras más negativo, más oportunidad. Tu ejemplo: -6.96 = súper regalado.</p>
+        </div>
+        <div class="pro-box" style="border-color: #FF3B3B;">
+            <b>3. ¿Se cae a pedazos? log -0.62%</b><p>-0.62% = bajó 62 centavos de $100 = normal. -5% = crash = no tocar. Solo compramos bajaditas chiquitas.</p>
+        </div>
+    </div>
+    <p style="margin-top:14px; color:gold; font-size:13px;">🟢 VERDE = Barato + Regalado + Bajadita chiquita → Compras $2 | 🟡 AMARILLO = Esperas, no perder es ganar | 🔴 ROJO = Freno total</p>
+</div>
+""", unsafe_allow_html=True)
+
+st.write("")
+# CONTROLES
+c1,c2,c3 = st.columns([2,1,1])
+with c1:
+    symbol = st.selectbox("Activo", ["BTC/USD", "AAPL", "ETH/USD"], index=0)
+with c2:
+    iniciar = st.button("🏁 ANALIZAR V21", type="primary", use_container_width=True)
+with c3:
+    if st.button("🚨 PANICO", use_container_width=True):
+        try: client.close_all_positions(cancel_orders=True); st.error("Vendido")
+        except Exception as e: st.error(e)
+
+if iniciar:
+    ticker = "BTC-USD" if symbol=="BTC/USD" else symbol
+    if symbol=="BTC/USD": ticker="BTC-USD"
+    if symbol=="AAPL": ticker="AAPL"
+    if symbol=="ETH/USD": ticker="ETH-USD"
+    h = yf.Ticker(ticker).history(period="1mo")
+    precios = h['Close'].values
+    fib = h['High'].max()-(h['High'].max()-h['Low'].min())*0.618
+    price = precios[-1]
+    x_bar, s, z, log_ret = calcular_quant(precios)
+    estado, texto, color = get_semaforo(price, fib, z, log_ret)
+
+    # METRICAS PRO
+    m1,m2,m3,m4 = st.columns(4)
+    m1.metric(symbol, f"${price:,.2f}", f"Fib: ${fib:,.2f}")
+    m2.metric("z-score", f"{z:.2f}", "Compra si < -2")
+    m3.metric("log ret", f"{log_ret*100:.3f}%", "-0.8% a -0.02% ideal")
+    m4.markdown(f"<div style='background:{color}; color:black; padding:18px; border-radius:12px; text-align:center; font-weight:900; font-size:20px;'>{texto}<br><span style='font-size:12px;'>{estado}</span></div>", unsafe_allow_html=True)
+
+    # GRAFICO
+    fig, ax = plt.subplots(figsize=(10,4))
+    fig.patch.set_facecolor('#0E1117'); ax.set_facecolor('#0E1117')
+    ax.plot(precios, color='#00FF88', label='Precio')
+    ax.axhline(fib, color='gold', linestyle='--', label='Fib 0.618 Barato')
+    ax.axhline(x_bar, color='cyan', alpha=0.4, label='Media')
+    if estado=="VERDE": ax.scatter(len(precios)-1, price, color='white', s=200, edgecolors='gold', linewidth=2, zorder=5)
+    ax.legend(facecolor='#0E1117', edgecolor='gold', labelcolor='white')
+    ax.tick_params(colors='white'); st.pyplot(fig)
+
+    # TELEGRAM SONIDO
+    if estado=="VERDE":
+        telegram_msg(f"🟢 V21 VERDE {symbol} COMPRAR $2 Fib {fib:.2f} z {z:.2f} log {log_ret:.4f}", "verde")
+        st.success(f"✅ Señal VERDE detectada. Si fuera real, comprarías $2 de {symbol}. Sonido F1 largo enviado a Telegram.")
+    elif estado=="ROJO":
+        telegram_msg(f"🔴 V21 ROJO {symbol} NO COMPRAR", "rojo")
+        st.error("🔴 ROJO - No comprar, te cuida tu dinero.")
+    else:
+        st.warning("🟡 AMARILLO - Esperar. No perder también es ganar. No mandamos sonido para no spamear.")
+
+    st.caption(f"z=(x̄-μ0)/(σ/√n) | log=ln(Pt/Pt-1) | V21 -0.008 conservador para $30 reales | {datetime.now().strftime('%H:%M:%S')}")
