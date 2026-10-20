@@ -14,7 +14,6 @@ if "perfil_nombre" not in st.session_state: st.session_state.perfil_nombre="Chri
 if "analizar" not in st.session_state: st.session_state.analizar=False
 responder_comandos()
 
-# THEMA FIJO FERRARI - SIN SELECTOR
 primary="#FF0000"; bg="#0A0000"; title_color="#FF0000"; glow="0 0 20px #FF0000"
 
 with st.sidebar:
@@ -24,12 +23,10 @@ with st.sidebar:
     c1,c2=st.columns(2)
     with c1:
         if st.button("💾 Guardar", use_container_width=True):
-            st.session_state.perfil_nombre=nombre_input
-            st.rerun()
+            st.session_state.perfil_nombre=nombre_input; st.rerun()
     with c2:
         if st.button("🔄 Reset", use_container_width=True):
-            st.session_state.perfil_nombre="Piloto #1"
-            st.rerun()
+            st.session_state.perfil_nombre="Piloto #1"; st.rerun()
     piloto=st.session_state.perfil_nombre
     st.info(f"🏁 Piloto: {piloto}")
 
@@ -54,42 +51,70 @@ def get_semaforo(price,fib,z,lr):
     elif lr<-0.05 or z>1.0: return "ROJO","🔴 NO COMPRAR","#FF3B3B"
     else: return "AMARILLO","🟡 ESPERAR","#FFD60A"
 
-st.markdown(f"# {piloto} | F1 BOT")
+def analisis_periodo(ticker, periodo, nombre):
+    h=yf.Ticker(ticker).history(period=periodo)
+    if len(h)<5: return None
+    precios=h['Close'].values
+    fib=h['High'].max()-(h['High'].max()-h['Low'].min())*0.618
+    price=precios[-1]; xb,s,z,lr=calcular_quant(precios)
+    estado,texto,color=get_semaforo(price,fib,z,lr)
+    variacion = ((precios[-1]/precios[0])-1)*100
+    return {"nombre":nombre, "price":price, "fib":fib, "xb":xb, "z":z, "lr":lr, "estado":estado, "texto":texto, "color":color, "var":variacion, "precios":precios}
+
+st.markdown(f"# {piloto} | F1 BOT V25")
 col_act,col_btn1,col_btn2=st.columns([2,1,1])
 with col_act: symbol=st.selectbox("Activo", ["ETH/USD","BTC/USD","AAPL"], index=0)
 with col_btn1:
     if st.button("🏁 ANALIZAR", type="primary", use_container_width=True):
-        st.session_state.analizar=True
-        st.rerun()
+        st.session_state.analizar=True; st.rerun()
 with col_btn2:
     if st.button("🚨 PANICO", use_container_width=True):
         try: client.close_all_positions(cancel_orders=True); st.error("PANICO EJECUTADO")
         except Exception as e: st.error(str(e))
 
 if st.session_state.analizar:
-    try:
-        ticker="BTC-USD" if symbol=="BTC/USD" else "ETH-USD" if symbol=="ETH/USD" else "AAPL"
-        h=yf.Ticker(ticker).history(period="1mo")
-        precios=h['Close'].values
-        fib=h['High'].max()-(h['High'].max()-h['Low'].min())*0.618
-        price=precios[-1]; xb,s,z,lr=calcular_quant(precios)
-        estado,texto,color=get_semaforo(price,fib,z,lr)
+    ticker="BTC-USD" if symbol=="BTC/USD" else "ETH-USD" if symbol=="ETH/USD" else "AAPL"
+    
+    # ============ ANALISIS MULTI-TEMPORALIDAD ============
+    tab1, tab2, tab3, tab4 = st.tabs(["📅 DÍA", "📆 SEMANA", "🗓️ MES", "📈 AÑO"])
+    
+    periodos = [("1d","DÍA"), ("5d","SEMANA"), ("1mo","MES"), ("1y","AÑO")]
+    resultados = []
+    
+    for per,nom in periodos:
+        try:
+            r=analisis_periodo(ticker, per, nom)
+            if r: resultados.append(r)
+        except: pass
 
-        st.markdown(f"### {texto} - {symbol} ${price:,.2f}")
-        m1,m2,m3,m4=st.columns(4)
-        m1.metric(symbol, f"${price:,.2f}", f"Fib ${fib:,.2f}")
-        m2.metric("z-score", f"{z:.2f}"); m3.metric("log ret", f"{lr*100:.3f}%")
-        m4.markdown(f"<div style='background:{color};color:black;padding:12px;border-radius:10px;text-align:center'><b>{texto}</b></div>", unsafe_allow_html=True)
+    for i, (per,nom) in enumerate(periodos):
+        with [tab1,tab2,tab3,tab4][i]:
+            if i < len(resultados):
+                r=resultados[i]
+                st.markdown(f"### {r['texto']} - {symbol} ${r['price']:,.2f}")
+                c1,c2,c3,c4=st.columns(4)
+                c1.metric(f"Var {nom}", f"{r['var']:+.2f}%")
+                c2.metric("Fib 61.8%", f"${r['fib']:,.2f}")
+                c3.metric("z-score", f"{r['z']:.2f}")
+                c4.markdown(f"<div style='background:{r['color']};color:black;padding:10px;border-radius:8px;text-align:center'><b>{r['estado']}</b></div>", unsafe_allow_html=True)
+                
+                fig, ax = plt.subplots(figsize=(11,3.5))
+                fig.patch.set_facecolor(bg); ax.set_facecolor(bg)
+                ax.plot(r['precios'], color=primary, linewidth=2)
+                ax.axhline(r['fib'], color=title_color, linestyle='--', alpha=0.7)
+                ax.axhline(r['xb'], color='cyan', alpha=0.4)
+                ax.tick_params(colors='white')
+                st.pyplot(fig)
 
-        fig, ax = plt.subplots(figsize=(11,4.5))
-        fig.patch.set_facecolor(bg); ax.set_facecolor(bg)
-        ax.plot(precios, color=primary, linewidth=2)
-        ax.axhline(fib, color=title_color, linestyle='--')
-        ax.axhline(xb, color='cyan', alpha=0.4)
-        ax.tick_params(colors='white')
-        st.pyplot(fig)
+    # ============ ANALISIS PRINCIPAL PARA TELEGRAM ============
+    if resultados:
+        r_main = resultados[2] # MES como principal
+        price=r_main['price']; fib=r_main['fib']; xb=r_main['xb']; z=r_main['z']; lr=r_main['lr']; estado=r_main['estado']; texto=r_main['texto']
 
-        # ============ TELEGRAM FINAL LIMPIO - SIN THEMA Y SIN VERSION ============
+        st.divider()
+        st.markdown(f"### RESUMEN: {texto}")
+
+        # TELEGRAM LIMPIO SIN THEMA NI VERSION
         mensaje_telegram = (
             f"🏁 F1 BOT - {piloto}\n"
             f"📊 Activo: {symbol} ${price:,.2f}\n"
@@ -98,7 +123,8 @@ if st.session_state.analizar:
             f"z-score: {z:.2f}\n"
             f"log-ret: {lr*100:.4f}%\n"
             f"Media: ${xb:,.2f}\n"
-            f"Estado: {estado}"
+            f"Estado: {estado}\n"
+            f"Día {resultados[0]['var']:+.1f}% | Semana {resultados[1]['var']:+.1f}% | Mes {resultados[2]['var']:+.1f}%"
         )
         
         try:
@@ -114,5 +140,3 @@ if st.session_state.analizar:
                 notificar_f1(f"✅ ORDEN EJECUTADA {symbol} ${price:.2f} - {piloto}")
             except Exception as e: st.error(str(e))
             st.session_state.last_verde_price=price
-
-    except Exception as e: st.error(f"Error: {e}")
