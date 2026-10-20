@@ -178,20 +178,40 @@ try:
             pct = float(p.unrealized_plpc)*100 if hasattr(p,'unrealized_plpc') else 0
             st.markdown(f"**{'🟢' if pl>=0 else '🔴'} {p.symbol}** {float(p.qty):.6f} • ${float(p.market_value):.2f} • P/L {pl:+.2f} ({pct:+.2f}%)", unsafe_allow_html=True)
 
-    # GRAFICA EQUITY
+    # GRAFICA EQUITY - PISTA CON MARCAS LLANTA
     if len(hist) > 1:
-        st.markdown("<div class='equity-box'>📈 <b>Equity en el tiempo - Escudería</b></div>", unsafe_allow_html=True)
-        eq_vals = [h["eq"] for h in hist]
-        eq_times = [h["t"] for h in hist]
-        fig2, ax2 = plt.subplots(figsize=(10,3))
-        fig2.patch.set_facecolor("#0B1A13"); ax2.set_facecolor("#0B1A13")
-        ax2.plot(eq_vals, color="#00FF88", linewidth=2.5)
-        ax2.fill_between(range(len(eq_vals)), eq_vals, min(eq_vals)*0.99, color="#00FF88", alpha=0.15)
-        ax2.tick_params(colors="#6B7280", labelsize=8)
-        ax2.set_xticks(range(0,len(eq_times), max(1,len(eq_times)//6)))
-        ax2.set_xticklabels([eq_times[i] for i in range(0,len(eq_times), max(1,len(eq_times)//6))], rotation=25)
-        for sp in ax2.spines.values(): sp.set_visible(False)
-        st.pyplot(fig2)
+        st.markdown("<div class='equity-box'>🏁 <b>CIRCUIT TELEMETRY - MARCAS DE LLANTA TP</b> • Cada 💨 es un Take Profit +2%</div>", unsafe_allow_html=True)
+        eq_vals = np.array([h["eq"] for h in hist])
+        initial = 100000
+        pnl = eq_vals[-1] - initial
+        pnl_pct = (eq_vals[-1]/initial -1)*100
+        eq_norm = (eq_vals - np.min(eq_vals)) / (np.max(eq_vals) - np.min(eq_vals) + 1) if np.max(eq_vals)!=np.min(eq_vals) else np.zeros_like(eq_vals)*0.5 + 0.5
+        x = np.linspace(0, 10, len(eq_vals))
+        track_center_y = np.sin(x*0.8)*0.3 + np.sin(x*1.5)*0.15
+        track_width = 0.4
+        fig2, ax2 = plt.subplots(figsize=(11, 4.2))
+        fig2.patch.set_facecolor("#111111"); ax2.set_facecolor("#2B2B2B")
+        ax2.fill_between(x, track_center_y - track_width, track_center_y + track_width, color="#2B2B2B", zorder=1)
+        ax2.plot(x, track_center_y + track_width, color="white", linewidth=2.5, zorder=2)
+        ax2.plot(x, track_center_y - track_width, color="white", linewidth=2.5, zorder=2)
+        for i in range(0, len(x), 4):
+            ax2.plot([x[i], x[i]], [track_center_y[i]+track_width, track_center_y[i]+track_width+0.06], color="red" if i%2==0 else "white", linewidth=3, zorder=3)
+            ax2.plot([x[i], x[i]], [track_center_y[i]-track_width, track_center_y[i]-track_width-0.06], color="red" if i%2==0 else "white", linewidth=3, zorder=3)
+        ax2.axvline(x[0], color="white", linewidth=2, zorder=4)
+        for y in np.arange(track_center_y[0]-track_width, track_center_y[0]+track_width, 0.08):
+            ax2.add_patch(plt.Rectangle((x[0]-0.06, y), 0.06, 0.04, color="black" if int(y*10)%2==0 else "white", zorder=5))
+        racing_line_y = track_center_y + (eq_norm - 0.5) * (track_width*0.8)
+        ax2.plot(x, racing_line_y, color="#FFD700", linewidth=3.5, zorder=6)
+        for mark in tp_marks:
+            idx = mark["idx"]
+            if idx < len(x):
+                ax2.scatter([x[idx]], [racing_line_y[idx]], s=250, color="#00FF88", marker="*", edgecolors="white", linewidths=1.5, zorder=9)
+                ax2.text(x[idx], racing_line_y[idx]+0.18, f"💨 TP {mark['symbol']}\n+{mark['pct']:.1f}%", color="#00FF88", fontsize=7, fontweight="bold", ha="center", zorder=10, bbox=dict(boxstyle="round,pad=0.2", facecolor="black", edgecolor="#00FF88", alpha=0.8))
+        ax2.scatter([x[-1]], [racing_line_y[-1]], s=200, color="#00FF88", edgecolors="white", linewidths=2, zorder=11)
+        ax2.text(x[-1]+0.15, racing_line_y[-1], f"🏎️ ${eq_vals[-1]:,.0f}\n{pnl_pct:+.2f}%", color="#00FF88" if pnl>=0 else "#FF4D4D", fontsize=9, fontweight="bold", zorder=12, bbox=dict(boxstyle="round,pad=0.3", facecolor="#111111", edgecolor="#FFD700"))
+        ax2.text(0.02, 0.96, f"🏁 VUELTA {len(eq_vals)} | P/L ${pnl:+.0f} ({pnl_pct:+.2f}%)\n💨 TPs: {len(tp_marks)} | MAX ${np.max(eq_vals):,.0f}", transform=ax2.transAxes, color="white", fontsize=9, family="monospace", bbox=dict(boxstyle="round,pad=0.5", facecolor="black", edgecolor="#00FF88" if pnl>=0 else "#FF4D4D", linewidth=1.5), verticalalignment='top', zorder=13)
+        ax2.set_xlim(-0.5, 11); ax2.set_ylim(-1.3, 1.3); ax2.axis('off')
+        fig2.tight_layout(); st.pyplot(fig2)
 
 except Exception as e:
     st.error(f"Alpaca: {e}")
