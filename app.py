@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title="F1 SEMAFORO V28 MONOPLAZA", layout="wide", page_icon="🏁")
+st.set_page_config(page_title="F1 SEMAFORO V28.1 ADELANTE", layout="wide", page_icon="🏁")
 import yfinance as yf, numpy as np, matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import os, json
@@ -33,23 +33,23 @@ st.markdown("""
 .verde-banner{background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.3); color:#4ADE80; padding:12px; border-radius:10px; font-weight:700; margin-top:12px}
 .port-card{border:1.5px solid #00FF88; background:#0B1A13; padding:12px; border-radius:12px; margin-bottom:10px}
 .equity-box{border:1.5px solid #00FF88; background:#0B1A13; padding:16px; border-radius:14px; margin-top:12px}
-@keyframes drive { 0% { transform: translateX(-350px); } 100% { transform: translateX(calc(100vw + 100px)); } }
-@keyframes flagwave { 0% { transform: rotate(-6deg) scale(1); } 100% { transform: rotate(12deg) scale(1.05); } }
-@keyframes smoke { 0% { transform: translateX(0); opacity:0; } 15% { opacity:0.7; } 100% { transform: translateX(calc(100vw + 250px)); opacity:0; } }
+@keyframes driveCorrect { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-100vw - 600px)); } }
+@keyframes flagwave { 0% { transform: rotate(-6deg); } 100% { transform: rotate(12deg); } }
 @keyframes road { 0% { background-position: 0 0; } 100% { background-position: 80px 0; } }
+@keyframes smokeTrail { 0% { transform: translateX(0); opacity:0; } 15% { opacity:0.7; } 100% { transform: translateX(calc(-100vw - 600px)); opacity:0; } }
 </style>
 """, unsafe_allow_html=True)
 
-# MONOPLAZA ANIMADO ARRIBA - SIN NECESIDAD DE IMAGEN EXTERNA
+# 🏁 MONOPLAZA PA' ADELANTE - DE DERECHA A IZQUIERDA
 car_html = """
 <div style="position:relative; width:100%; height:118px; background: linear-gradient(90deg, #0F0F0F 0%, #1A1A1A 50%, #0F0F0F 100%); border:2px solid #FFD700; border-radius:16px; overflow:hidden; margin-bottom:14px; box-shadow:0 0 25px rgba(255,215,0,0.35)">
-  <div style="position:absolute; top:8px; left:16px; color:#FFD700; font-weight:900; font-size:11px; letter-spacing:2px; z-index:10">🏁 ESCUDERIA CHRISTIANLE • V28 • CIRCUIT TELEMETRY • INTERLAGOS HD</div>
-  <div style="position:absolute; top:6px; right:16px; color:#00FF88; font-weight:800; font-size:10px; z-index:10" id="speedo">🏎️ 342 km/h • DRS ON</div>
-  <div style="position:absolute; top:30px; left:-350px; animation: drive 5.5s linear infinite; font-size:62px; z-index:5; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8));">🏎️</div>
-  <div style="position:absolute; top:20px; right:22px; animation: flagwave 0.4s ease-in-out infinite alternate; font-size:44px; z-index:6">🏁</div>
+  <div style="position:absolute; top:8px; left:16px; color:#FFD700; font-weight:900; font-size:11px; letter-spacing:2px; z-index:10">🏁 ESCUDERIA CHRISTIANLE • V28.1 • 342 km/h • DRS ON • PA' ADELANTE</div>
+  <div style="position:absolute; top:8px; right:16px; color:#00FF88; font-weight:800; font-size:10px; z-index:10">🏎️ ADELANTE • NO REVERSA</div>
+  <div style="position:absolute; top:30px; right:-350px; animation: driveCorrect 5.5s linear infinite; font-size:62px; z-index:5; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8));">🏎️</div>
+  <div style="position:absolute; top:20px; left:22px; animation: flagwave 0.4s ease-in-out infinite alternate; font-size:44px; z-index:6">🏁</div>
   <div style="position:absolute; bottom:10px; left:0; width:100%; height:6px; background: repeating-linear-gradient(90deg, white 0 22px, black 22px 44px); animation: road 0.3s linear infinite; z-index:2"></div>
-  <div style="position:absolute; bottom:18px; left:-120px; width:90px; height:5px; background:radial-gradient(rgba(255,255,255,0.5), transparent); filter:blur(2px); animation: smoke 5.5s linear infinite; z-index:4"></div>
-  <div style="position:absolute; bottom:18px; left:-140px; width:120px; height:3px; background:rgba(0,255,136,0.25); filter:blur(3px); animation: smoke 5.5s linear infinite 0.2s; z-index:3"></div>
+  <div style="position:absolute; bottom:18px; right:-120px; width:90px; height:5px; background:radial-gradient(rgba(255,255,255,0.5), transparent); filter:blur(2px); animation: smokeTrail 5.5s linear infinite; z-index:4"></div>
+  <div style="position:absolute; bottom:18px; right:-140px; width:120px; height:3px; background:rgba(0,255,136,0.25); filter:blur(3px); animation: smokeTrail 5.5s linear infinite 0.2s; z-index:3"></div>
 </div>
 """
 st.markdown(car_html, unsafe_allow_html=True)
@@ -106,8 +106,8 @@ if st.session_state.last_buy_time:
 
 st.markdown(f"""
 <div class="semaforo-box">
- <div class="semaforo-title">🏎️ F1 SEMÁFORO V28 MONOPLAZA {"🤖 AUTO ON" if st.session_state.auto_pilot else ""}</div>
- <div class="semaforo-sub">Sin fórmulas. Solo 3 preguntas.</div>
+ <div class="semaforo-title">🏎️ F1 SEMÁFORO V28.1 PA' ADELANTE {"🤖 AUTO ON" if st.session_state.auto_pilot else ""}</div>
+ <div class="semaforo-sub">Sin fórmulas. Solo 3 preguntas. Carrito ya no va en reversa 😂</div>
  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px">
   <div class="sema-card card-yellow"><div class="sema-label">1. ¿Está barato? Fib 0.618</div><div class="sema-text">${price:,.0f} vs ${fib:,.0f}</div></div>
   <div class="sema-card card-green"><div class="sema-label">2. ¿Está regalado? z= {z:.2f}</div><div class="sema-text">z {z:.2f}</div></div>
@@ -190,7 +190,7 @@ try:
             st.markdown(f"**{'🟢' if pl>=0 else '🔴'} {p.symbol}** {float(p.qty):.6f} • ${float(p.market_value):.2f} • P/L {pl:+.2f} ({pct:+.2f}%)", unsafe_allow_html=True)
 
     if len(hist) > 1:
-        st.markdown("<div class='equity-box'>🏁 <b>CIRCUIT INTERLAGOS HD</b> • 🟢 BUY | 💨 TP +2%</div>", unsafe_allow_html=True)
+        st.markdown("<div class='equity-box'>🏁 <b>CIRCUIT INTERLAGOS HD • PA' ADELANTE</b> • 🟢 BUY | 💨 TP +2%</div>", unsafe_allow_html=True)
         eq_vals=np.array([h["eq"] for h in hist])
         initial=100000; pnl=eq_vals[-1]-initial; pnl_pct=(eq_vals[-1]/initial-1)*100
         eq_min, eq_max=np.min(eq_vals), np.max(eq_vals)
@@ -256,5 +256,5 @@ with b4: st.markdown(f"<div class='box'>🏔️ <b>vs MAX 1 AÑO</b><br>{vsmax:.
 st.markdown(f"<div class='backtest'>🧠 <b>BACKTEST</b><br>{len(casos)} casos | Prob rebote 24h: {prob:.1f}% • 24h {avg24:.2f}% | 7d {avg7:.2f}%<br>⚠️ {sema_color}: {sema_txt}</div>", unsafe_allow_html=True)
 try:
     acc = client.get_account()
-    notificar_f1(f"<b>🏁 F1 V28 MONOPLAZA</b>\n{symbol} ${price:,.2f} • {sema_txt}\nEquity ${float(acc.equity):,.2f}")
+    notificar_f1(f"<b>🏁 F1 V28.1 ADELANTE</b>\n{symbol} ${price:,.2f} • {sema_txt}\nEquity ${float(acc.equity):,.2f}")
 except: pass
