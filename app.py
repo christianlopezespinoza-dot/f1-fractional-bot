@@ -1,4 +1,15 @@
 import streamlit as st
+st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+<style>
+h1, h2, h3, .stMetric {font-family: 'Orbitron', monospace !important;}
+div[data-testid="stMetricValue"] {color: #FFD700 !important; text-shadow: 0 0 10px #FFD700;}
+.tarjeta-f1 {border: 2px solid #FFD700; animation: respira 2s infinite alternate; border-radius:15px; padding:15px;}
+@keyframes respira {0%{box-shadow:0 0 5px #FFD700} 100%{box-shadow:0 0 20px #FFD700, 0 0 30px #00FF88}}
+.boton-verde {animation: late 0.8s infinite alternate;}
+@keyframes late {0%{transform:scale(1)} 100%{transform:scale(1.05); box-shadow:0 0 25px #00FF88}}
+</style>
+""", unsafe_allow_html=True)
 import yfinance as yf
 import requests
 import time
@@ -20,12 +31,6 @@ T_TOKEN = st.secrets["telegram"]["BOT_TOKEN"]
 T_CHAT = st.secrets["telegram"]["CHAT_ID"]
 client = TradingClient(A_KEY, A_SECRET, paper=True)
 
-def telegram_msg(msg, tipo="verde"):
-    # Usa tu bot_telegram.py con sonidos locales
-    try:
-        notificar_f1("BTC/USD", 0.001, 0, tipo=tipo)
-    except: pass
-
 def calcular_quant(precios):
     n = len(precios)
     x_bar = np.mean(precios)
@@ -46,6 +51,7 @@ def get_semaforo(price, fib, z, log_ret):
         return "AMARILLO", "🟡 ESPERAR - Paciencia", "#FFD60A"
 
 # ========== TARJETA PRO MEGA PRO ==========
+st.markdown('<div class="tarjeta-f1">', unsafe_allow_html=True)
 st.markdown("""
 <style>
 .pro-card {
@@ -76,6 +82,7 @@ st.markdown("""
     <p style="margin-top:14px; color:gold; font-size:13px;">🟢 VERDE = Barato + Regalado + Bajadita chiquita → Compras $2 | 🟡 AMARILLO = Esperas, no perder es ganar | 🔴 ROJO = Freno total</p>
 </div>
 """, unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 st.write("")
 # CONTROLES
