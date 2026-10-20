@@ -136,7 +136,7 @@ if iniciar or auto_count > 0:
         # SEMAFORO Y TELEGRAM - CORREGIDO
         if estado=="VERDE":
             if abs(price - st.session_state.last_verde_price) > 10:
-                notificar_f1(f"🏁 VERDE BTC/USD COMPRAR $2\nPrecio ${price:.2f}\nFib ${fib:.2f}\nZ {z:.2f}\nLog {log_ret*100:.3f}%")
+                notificar_f1(f"🏁 VERDE {symbol} COMPRAR $2\nPrecio ${price:.2f}\nFib ${fib:.2f}\nZ {z:.2f}\nLog {log_ret*100:.3f}%")
                 st.session_state.last_verde_price = price
             st.success(f"🟢 VERDE: {texto}")
         elif estado=="ROJO":
