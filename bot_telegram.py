@@ -1,33 +1,20 @@
 import requests
-import os
+import streamlit as st
 
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-
-def notificar_f1(simbolo, cantidad, precio, tipo="verde", fib=0, z=0, log=0):
-    if not BOT_TOKEN or not CHAT_ID:
-        print("FALTA BOT_TOKEN o CHAT_ID en secrets")
-        return False
+def notificar_f1(symbol, cantidad, price, tipo="verde", fib=0, z=0, log=0):
     try:
-        if tipo == "verde":
-            msg = f"🏁🔊 F1 LARGO - VERDE DETECTADO\n\n🟢 {simbolo} COMPRAR $2\nPrecio: ${precio}\nFib: ${fib:.2f}\nZ: {z:.2f} (regalado)\nLog: {log*100:.3f}% (bajadita)\n\n💰 Si fuera real, $2"
-            emoji = "🏁"
-        else:
-            msg = f"🔴 F1 V21 {tipo.upper()} - {simbolo}"
-            emoji = "🔴"
-
-        url_msg = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        r = requests.post(url_msg, json={"chat_id": CHAT_ID, "text": msg}, timeout=10)
-        print("Telegram msg:", r.text)
-
-        # Sonido: manda link de audio F1
-        url_audio = f"https://api.telegram.org/bot{BOT_TOKEN}/sendAudio"
-        audio_url = "https://cdn.pixabay.com/audio/2022/03/24/audio_5a70a1157b.mp3"  # largo
-        if tipo != "verde":
-            audio_url = "https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3" # corto
-        requests.post(url_audio, json={"chat_id": CHAT_ID, "audio": audio_url, "caption": f"{emoji} F1 {tipo}"}, timeout=10)
-
-        return r.ok
-    except Exception as e:
-        print(f"Error Telegram: {e}")
+        BOT_TOKEN = st.secrets["telegram"]["BOT_TOKEN"]
+        CHAT_ID = st.secrets["telegram"]["CHAT_ID"]
+    except:
+        print("No hay secrets telegram")
         return False
+
+    if tipo == "verde":
+        texto = f"🏁🟢 V21 VERDE\n{ symbol} COMPRAR {cantidad}\nPrecio: ${price:.2f}\nFib: ${fib:.2f}\nZ: {z:.2f}\nLog: {log*100:.3f}%\nSonido F1 largo"
+    else:
+        texto = f"🔴 V21 ROJO\n{ symbol} NO COMPRAR\nPrecio: ${price:.2f}"
+
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    r = requests.post(url, json={"chat_id": CHAT_ID, "text": texto})
+    print(r.text)
+    return r.ok
