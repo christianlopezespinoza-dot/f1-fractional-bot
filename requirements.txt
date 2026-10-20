@@ -8,3 +8,6 @@ pillow
 streamlit-autorefresh
 pyarrow==24.0.0
 streamlit==1.66.0
+pandas
+numpy
+plotly
