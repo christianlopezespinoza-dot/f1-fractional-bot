@@ -130,7 +130,7 @@ if iniciar or auto_count > 0:
         # SEMAFORO Y TELEGRAM
         if estado=="VERDE":
             st.success(f"🟢 VERDE: {texto}")
-            notificar_f1(f"🟢 VERDE {symbol} ${price:.2f} z={z:.2f} log={log_ret*100:.3f}% - COMPRANDO")
+            notificar_f1(f"🏁 VERDE BTC/USD COMPRAR $2\nPrecio ${price:.2f}\nFib ${fib:.2f}\nZ {z:.2f}\nLog {log_ret*100:.3f}%")
         elif estado=="ROJO":
             st.error(f"🔴 ROJO: {texto}")
             notificar_f1(f"🔴 ROJO {symbol} ${price:.2f} - VENDIENDO")
