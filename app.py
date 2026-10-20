@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title="F1 AUTO PILOT", layout="wide", page_icon="🏁")
+st.set_page_config(page_title="F1 SEMAFORO", layout="wide", page_icon="🏁")
 import yfinance as yf, numpy as np, matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from alpaca.trading.client import TradingClient
@@ -22,7 +22,7 @@ st.markdown("""
 .sema-card{border-radius:12px; padding:12px; background:#10131C; min-height:110px}
 .card-yellow{border-left:3px solid #FFD700}.card-green{border-left:3px solid #00FF88}.card-red{border-left:3px solid #FF4D4D}
 .sema-label{color:#F0F0F0; font-weight:700; font-size:14px}.sema-text{color:#8A93A8; font-size:12px; margin-top:6px}.sema-footer{color:#D4C44A; font-size:12px; margin-top:12px}
-.neon-yellow{color:#FFD700!important; text-shadow:0 0 8px #FFD700, 0 0 15px #FFA500!important; font-weight:900; font-size:32px}
+.neon-yellow{color:#FFD700!important; text-shadow:0 0 8px #FFD700, 0 0 15px #FFA500!important; font-weight:900; font-size:32px; line-height:1.1}
 .neon-small{font-size:12px; padding:3px 10px; border-radius:20px; display:inline-block; margin-top:4px; font-weight:700}
 .neon-green{background:rgba(0,255,136,0.15); color:#00FF88; border:1px solid rgba(0,255,136,0.3)}
 .neon-red{background:rgba(255,70,70,0.15); color:#FF6B7A; border:1px solid rgba(255,70,70,0.3)}
@@ -37,7 +37,6 @@ A_KEY=st.secrets["alpaca"]["API_KEY"]
 A_SECRET=st.secrets["alpaca"]["SECRET"]
 client=TradingClient(A_KEY,A_SECRET,paper=True)
 
-# CONTROLES
 c0,c1,c2,c3=st.columns([2,1,1,0.8])
 with c0: symbol=st.selectbox("Activo", ["BTC/USD","ETH/USD","AAPL","SOL/USD"], index=0, label_visibility="collapsed")
 with c1: 
@@ -45,12 +44,11 @@ with c1:
         st.session_state.analizar=True; st.rerun()
 with c2:
     if st.button("🚨 PANICO", use_container_width=True):
-        try: client.close_all_positions(cancel_orders=True); st.error("PANICO ENVIADO A BOXES")
+        try: client.close_all_positions(cancel_orders=True); st.error("PANICO")
         except Exception as e: st.error(str(e))
 with c3:
     st.session_state.auto_pilot = st.toggle("🤖 Auto", value=st.session_state.auto_pilot)
 
-# DATOS
 mapa={"BTC/USD":"BTC-USD","ETH/USD":"ETH-USD","AAPL":"AAPL","SOL/USD":"SOL-USD"}
 tk=mapa[symbol]
 h=yf.Ticker(tk).history(period="1mo")
@@ -82,9 +80,8 @@ else:
     if z > 0 or lr < -0.05:
         sema_color = "ROJO"; sema_txt = "🔴 Freno total"; puede_comprar = False
     else:
-        sema_color = "AMARILLO"; sema_txt = "🟡 Esperas"; puede_comprar = False
+        sema_color = "AMARILLO"; sema_txt = "🟡 Esperas, no perder es ganar"; puede_comprar = False
 
-# === LOGICA F1 AUTO PILOT - ANTI SATURACION 1 HORA ===
 orden_msg = ""
 cooldown_ok = True
 if st.session_state.last_buy_time:
@@ -94,7 +91,6 @@ if (puede_comprar and cooldown_ok) or (puede_comprar and st.session_state.auto_p
     if st.session_state.auto_pilot or st.session_state.analizar:
         try:
             if abs(price - st.session_state.last_verde_price) > 2:
-                # Tamaño inteligente: si z muy negativo, $15 si no $10
                 monto = 15 if z < -5 else 10
                 order = client.submit_order(MarketOrderRequest(symbol=symbol, notional=monto, side=OrderSide.BUY, time_in_force=TimeInForce.GTC))
                 st.session_state.last_verde_price = price
@@ -106,60 +102,59 @@ if (puede_comprar and cooldown_ok) or (puede_comprar and st.session_state.auto_p
             orden_msg = f"Error {e}"
 else:
     if not cooldown_ok and puede_comprar:
-        orden_msg = f"⏳ Cooldown 1h - Última {st.session_state.last_buy_time.strftime('%H:%M')}"
+        orden_msg = f"⏳ Cooldown 1h - {st.session_state.last_buy_time.strftime('%H:%M')}"
 
-# SEMAFORO
+# SEMAFORO SIN V21
 st.markdown(f"""
 <div class="semaforo-box">
  <div class="semaforo-title">🏎️ F1 SEMÁFORO - Cómo leer en 30 seg {"🤖 AUTO ON" if st.session_state.auto_pilot else ""}</div>
- <div class="semaforo-sub">Sin fórmulas. Solo 3 preguntas para no perder tu poco dinero. { "• Piloto automático activo - Te avisa solo" if st.session_state.auto_pilot else ""}</div>
+ <div class="semaforo-sub">Sin fórmulas. Solo 3 preguntas para no perder tu poco dinero.</div>
  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px">
-  <div class="sema-card card-yellow"><div class="sema-label">1. ¿Está barato? Fib 0.618</div><div class="sema-text">Si BTC está abajo, es aguacate en oferta. ${price:,.0f} vs ${fib:,.0f} normal.</div></div>
-  <div class="sema-card card-green"><div class="sema-label">2. ¿Está regalado? z= {z:.2f}</div><div class="sema-text">z {z:.2f} = súper regalado. Mientras más negativo, más oportunidad.</div></div>
-  <div class="sema-card card-red"><div class="sema-label">3. ¿Se cae a pedazos? log {lr*100:.2f}%</div><div class="sema-text">{lr*100:.2f}% = normal. -5% = crash = no tocar.</div></div>
+  <div class="sema-card card-yellow"><div class="sema-label">1. ¿Está barato? Fib 0.618</div><div class="sema-text">Línea dorada. Si BTC está abajo de ella, es como aguacate en oferta. ${price:,.0f} vs ${fib:,.0f} normal.</div></div>
+  <div class="sema-card card-green"><div class="sema-label">2. ¿Está regalado? z= {z:.2f}</div><div class="sema-text">z -2 a -7 = pánico. La gente lo remata. Tu ejemplo: {z:.2f} = súper regalado.</div></div>
+  <div class="sema-card card-red"><div class="sema-label">3. ¿Se cae a pedazos? log {lr*100:.2f}%</div><div class="sema-text">{lr*100:.2f}% = bajó {abs(lr*100):.0f} centavos = normal. -5% = crash = no tocar.</div></div>
  </div>
- <div class="sema-footer">🟢 VERDE = Barato + Regalado + Bajadita → Compras $10-$15 | 🟡 AMARILLO = Esperas | 🔴 ROJO = Freno total | ⏳ Cooldown 1h entre compras</div>
+ <div class="sema-footer">🟢 VERDE = Barato + Regalado + Bajadita chiquita → Compras $10 | 🟡 AMARILLO = Esperas | 🔴 ROJO = Freno total | ⏳ 1h entre compras</div>
 </div>
 """, unsafe_allow_html=True)
 
-# BARRA ALPACA DISCRETA + TOTAL PORTAFOLIO
+# BARRA ALPACA
 try:
     positions = client.get_all_positions()
     account = client.get_account()
     total = float(account.equity)
     pl_total = float(account.equity) - float(account.last_equity) if hasattr(account,'last_equity') else 0
     pl_color = "#00FF88" if pl_total >=0 else "#FF4D4D"
-    
-    barra_txt = f"💰 ALPACA PAPER • Total ${total:,.2f} • P/L <span style='color:{pl_color}'>{pl_total:+.2f}</span> • {symbol} ${price:,.0f} • {orden_msg if orden_msg else 'Listo'}"
+    barra_txt = f"💰 ALPACA PAPER • Total ${total:,.2f} • P/L <span style='color:{pl_color}'>{pl_total:+.2f}</span> • {symbol} • {orden_msg if orden_msg else 'Listo'}"
     st.markdown(f"""<div style="border:1.5px solid #FFD700; border-radius:14px; padding:10px 16px; background:#0B0F1A; box-shadow:0 0 12px rgba(255,215,0,0.3); margin-bottom:10px"><span style="color:#FFD700; font-weight:800; font-size:12px">{barra_txt}</span> <span style="color:#8A93A8; font-size:10px; float:right">escudería {st.session_state.perfil_nombre}</span></div>""", unsafe_allow_html=True)
-    
     c_alp1, c_alp2 = st.columns(2)
     with c_alp1:
         if st.button("💰 Ver en Alpaca →", use_container_width=True):
             st.session_state.show_alpaca = not st.session_state.show_alpaca
     with c_alp2:
         st.link_button("🔗 Abrir Dashboard Alpaca", "https://app.alpaca.markets/brokerage/dashboard/overview", use_container_width=True)
-
     if st.session_state.show_alpaca:
         st.markdown(f"<div class='port-card'>🏦 <b>Escudería {st.session_state.perfil_nombre}</b> • Equity ${total:,.2f} • Cash ${float(account.cash):,.2f} • Auto {'ON 🤖' if st.session_state.auto_pilot else 'OFF'}</div>", unsafe_allow_html=True)
         st.markdown("### 📦 Posiciones Alpaca")
         for p in positions:
             pl = float(p.unrealized_pl)
-            color = "🟢" if pl>=0 else "🔴"
-            st.markdown(f"**{color} {p.symbol}** {float(p.qty):.8f} • ${float(p.market_value):.2f} • P/L <span style='color:{'#00FF88' if pl>=0 else '#FF4D4D'}'>{pl:+.2f}</span>", unsafe_allow_html=True)
-        st.markdown("### 🧾 Últimas órdenes $10-$15")
+            st.markdown(f"**{'🟢' if pl>=0 else '🔴'} {p.symbol}** {float(p.qty):.8f} • ${float(p.market_value):.2f} • P/L <span style='color:{'#00FF88' if pl>=0 else '#FF4D4D'}'>{pl:+.2f}</span>", unsafe_allow_html=True)
+        st.markdown("### 🧾 Últimas órdenes")
         for o in list(client.get_orders())[:5]:
             st.caption(f"{o.symbol} {o.side} ${o.notional} - {o.status} - {str(o.created_at)[:16]}")
-
 except Exception as e:
     st.error(f"Alpaca: {e}")
 
-# NUMEROS NEON
-cA,cB,cC,cD=st.columns([1.2,0.8,0.8,1])
-with cA: st.markdown(f"<div style='color:#8A93A8; font-size:13px'>BTC/USD</div><div class='neon-yellow'>${price:,.0f}...</div><div class='neon-small neon-green'>↑ Fib: ${fib:,.2f}</div>", unsafe_allow_html=True)
-with cB: st.markdown(f"<div style='color:#8A93A8; font-size:13px'>z-score</div><div class='neon-yellow'>{z:.2f}</div><div class='neon-small neon-green'>↑ Compra si < -2</div>", unsafe_allow_html=True)
-with cC: st.markdown(f"<div style='color:#8A93A8; font-size:13px'>log ret</div><div class='neon-yellow'>{lr*100:.3f}%</div><div class='neon-small neon-red'>↓ -0.8% a -0.05%</div>", unsafe_allow_html=True)
-with cD: st.markdown(f"<div style='padding-top:10px'><div style='background:{'#00FF88' if puede_comprar else '#444'}; color:#000; font-weight:900; padding:12px; border-radius:10px; text-align:center'>{sema_txt}</div></div>", unsafe_allow_html=True)
+# === NUMEROS EXACTAMENTE COMO TU FOTO $81,857... -5.88 -0.195% ===
+cA,cB,cC=st.columns(3)
+with cA: 
+    st.markdown(f"<div style='color:#8A93A8; font-size:13px; visibility:hidden'>.</div><div class='neon-yellow'>${price:,.0f}...</div><div class='neon-small neon-green'>↑ Fib: ${fib:,.2f}</div>", unsafe_allow_html=True)
+with cB: 
+    st.markdown(f"<div style='color:#8A93A8; font-size:13px; visibility:hidden'>.</div><div class='neon-yellow'>{z:.2f}</div><div class='neon-small neon-green'>↑ Compra si < -2</div>", unsafe_allow_html=True)
+with cC: 
+    st.markdown(f"<div style='color:#8A93A8; font-size:13px; visibility:hidden'>.</div><div class='neon-yellow'>{lr*100:.3f}%</div><div class='neon-small neon-red'>↓ -0.8% a -0.05%</div>", unsafe_allow_html=True)
+
+st.markdown(f"<div style='padding-top:14px'><div style='background:{'#00FF88' if puede_comprar else '#2A2A2A'}; color:{'#000' if puede_comprar else '#888'}; font-weight:900; padding:12px; border-radius:10px; text-align:center'>{sema_txt} • {orden_msg}</div></div>", unsafe_allow_html=True)
 
 fig, ax=plt.subplots(figsize=(10,4))
 fig.patch.set_facecolor("#10131C"); ax.set_facecolor("#10131C")
@@ -192,22 +187,16 @@ Ganancia promedio 24h: {avg24:.2f}% | 7 días: {avg7:.2f}%<br><br>
 
 st.markdown(f"<div class='verde-banner'>🟢 {sema_color}: {sema_txt} • {orden_msg} • Auto {'🤖 ON' if st.session_state.auto_pilot else 'OFF'}</div>", unsafe_allow_html=True)
 
-# TELEGRAM AL DUEÑO DE LA ESCUDERIA - MAS COMPLETO
 try:
     acc = client.get_account()
     msg = (
-        f"<b>🏁 F1 ESCUDERIA {st.session_state.perfil_nombre} - REPORTE DUEÑO</b>\n"
-        f"━━━━━━━━━━━━━━\n"
+        f"<b>🏁 F1 ESCUDERIA {st.session_state.perfil_nombre}</b>\n"
         f"📊 <b>{symbol}</b> ${price:,.2f} • {sema_txt}\n"
-        f"🏦 <b>Equity:</b> ${float(acc.equity):,.2f} • Cash ${float(acc.cash):,.2f}\n"
-        f"━━━━━━━━━━━━━━\n"
-        f"📐 Fib ${fib:,.2f} | z {z:.2f} | log {lr*100:.4f}%\n"
-        f"🧠 Media ${xb:,.2f}\n"
-        f"━━━━━━━━━━━━━━\n"
+        f"🏦 Equity ${float(acc.equity):,.2f} • Cash ${float(acc.cash):,.2f}\n"
+        f"📐 Fib ${fib:,.2f} | z {z:.2f} | log {lr*100:.3f}%\n"
         f"⏱ 24h {ret24:+.2f}% | 7d {ret7:+.2f}% | 30d {ret30:+.2f}%\n"
-        f"🔬 Backtest {len(casos)} casos | Prob {prob:.1f}%\n"
-        f"🚦 Semaforo {sema_color} | {orden_msg}\n"
-        f"🤖 Auto Pilot {'ON' if st.session_state.auto_pilot else 'OFF'} | Cooldown {'OK' if cooldown_ok else 'ESPERA 1h'}\n"
+        f"🔬 Backtest {len(casos)} casos Prob {prob:.1f}%\n"
+        f"🚦 {sema_color} | {orden_msg} | Auto {'ON' if st.session_state.auto_pilot else 'OFF'}\n"
     )
     notificar_f1(msg)
 except: pass
