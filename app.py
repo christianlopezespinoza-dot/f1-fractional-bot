@@ -98,16 +98,17 @@ with c3:
         try: client.close_all_positions(cancel_orders=True); st.error("Vendido")
         except Exception as e: st.error(e)
 if iniciar or auto_count > 0:
-    ticker = "BTC-USD" if symbol=="BTC/USD" else symbol
-    if symbol=="BTC/USD": ticker="BTC-USD"
-    if symbol=="AAPL": ticker="AAPL"
-    if symbol=="ETH/USD": ticker="ETH-USD"
-    h = yf.Ticker(ticker).history(period="1mo")
-    precios = h['Close'].values
-    fib = h['High'].max()-(h['High'].max()-h['Low'].min())*0.618
-    price = precios[-1]
-    x_bar, s, z, log_ret = calcular_quant(precios)
-    estado, texto, color = get_semaforo(price, fib, z, log_ret)
+    try:
+        ticker = "BTC-USD" if symbol=="BTC/USD" else symbol
+        if symbol=="BTC/USD": ticker="BTC-USD"
+        if symbol=="AAPL": ticker="AAPL"
+        if symbol=="ETH/USD": ticker="ETH-USD"
+        h = yf.Ticker(ticker).history(period="1mo")
+        precios = h['Close'].values
+        fib = h['High'].max()-(h['High'].max()-h['Low'].min())*0.
+        price = precios[-1]
+        x_bar, s, z, log_ret = calcular_quant(precios)
+        estado, texto, color = get_semaforo(price, fib, z, log_ret)
 
     # METRICAS PRO
     m1,m2,m3,m4 = st.columns(4)
