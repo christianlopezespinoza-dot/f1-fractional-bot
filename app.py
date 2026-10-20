@@ -97,8 +97,7 @@ with c3:
     if st.button("🚨 PANICO", use_container_width=True):
         try: client.close_all_positions(cancel_orders=True); st.error("Vendido")
         except Exception as e: st.error(e)
-
-if iniciar:
+if iniciar or auto_count > 0:
     ticker = "BTC-USD" if symbol=="BTC/USD" else symbol
     if symbol=="BTC/USD": ticker="BTC-USD"
     if symbol=="AAPL": ticker="AAPL"
