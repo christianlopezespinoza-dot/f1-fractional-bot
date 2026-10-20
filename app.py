@@ -133,18 +133,13 @@ if iniciar or auto_count > 0:
         ax.legend(facecolor='#0E1117', edgecolor='gold', labelcolor='white')
         ax.tick_params(colors='white'); st.pyplot(fig)
 
-        # SEMAFORO Y TELEGRAM
-        if semaforo == "VERDE":
-           if abs(precio - st.session_state.last_verde_price) > 10:
-              notificar_f1(f"🏁 VERDE BTC/USD COMPRAR $2\nPrecio ${precio:.2f}\nFib ${fib:.2f}\nZ {z:.2f}\nLog {log:.3%}")
-              st.session_state.last_verde_price = precio
+        # SEMAFORO Y TELEGRAM - CORREGIDO
+        if estado=="VERDE":
+            if abs(price - st.session_state.last_verde_price) > 10:
+                notificar_f1(f"🏁 VERDE BTC/USD COMPRAR $2\nPrecio ${price:.2f}\nFib ${fib:.2f}\nZ {z:.2f}\nLog {log_ret*100:.3f}%")
+                st.session_state.last_verde_price = price
+            st.success(f"🟢 VERDE: {texto}")
         elif estado=="ROJO":
             st.error(f"🔴 ROJO: {texto}")
-            notificar_f1(f"🔴 ROJO {symbol} ${price:.2f} - VENDIENDO")
         else:
             st.warning(f"🟡 AMARILLO: {texto}")
-
-    except Exception as e:
-        print(f"Error {e} - reintentando")
-        st.warning(f"Error temporal {e}, reintenta en 5s")
-        time.sleep(5)
