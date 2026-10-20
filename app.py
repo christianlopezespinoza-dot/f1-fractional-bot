@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title="F1 V35.1 FIX", layout="wide", page_icon="💎")
+st.set_page_config(page_title="F1 V35.2 FIX", layout="wide", page_icon="💎")
 import yfinance as yf, numpy as np, matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import os, json
@@ -18,68 +18,46 @@ responder_comandos()
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"]{background:#10131C!important}
-.semaforo-box{border:1.5px solid #FFD700; border-radius:16px; padding:16px; background:#181B27; box-shadow:0 0 15px rgba(255,215,0,0.2); margin-bottom:14px}
+.semaforo-box{border:1.5px solid #FFD700; border-radius:16px; padding:16px; background:#181B27; margin-bottom:14px}
 .box{border:1.5px solid #FFC800; background:rgba(255,200,0,0.08); padding:14px; border-radius:14px; min-height:85px; color:#E8E6D9}
 .backtest{border:1.5px solid #FFC800; background:#1C1A08; padding:18px; border-radius:14px; margin-top:12px; color:#E8E6D9}
 .port-card{border:1.5px solid #00FF88; background:#0B1A13; padding:12px; border-radius:12px; margin-bottom:10px}
 .equity-box{border:1.5px solid #00FF88; background:#0B1A13; padding:16px; border-radius:14px; margin-top:12px}
-.diamond-card{border:1.5px solid #00FFFF; background:linear-gradient(135deg, #0B1A1A 0%, #0F2A2A 100%); border-radius:12px; padding:12px; color:#E8E6D9}
+.diamond-card{border:1.5px solid #00FFFF; background:#0B1A1A; border-radius:12px; padding:12px; color:#E8E6D9}
 .leaderboard{border:1.5px solid #FFD700; background:#0B0F1A; border-radius:14px; padding:16px; margin-top:14px}
 @keyframes driveCorrect { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-100vw - 650px)); } }
 @keyframes flagwave { 0% { transform: rotate(-6deg); } 100% { transform: rotate(12deg); } }
 @keyframes road { 0% { background-position: 0 0; } 100% { background-position: 80px 0; } }
-@keyframes smoke { 0% { transform: scale(0.2); opacity:0; } 15% { transform: scale(1.3); opacity:0.8; } 35% { transform: scale(2) translateX(-90px); opacity:0; } 100% { opacity:0; } }
-@keyframes coinFloat { 0% { transform: translateY(0) rotateY(0); } 50% { transform: translateY(-6px) rotateY(180deg); } 100% { transform: translateY(0) rotateY(360deg); } }
-@keyframes coinCollect { 0%, 18% { opacity:1; } 20% { transform: scale(1.9); filter: brightness(2.2); } 23% { opacity:0; transform: scale(0) translateY(-35px); } 100% { opacity:0; } }
-@keyframes diamondShine { 0% { filter: brightness(1.2) drop-shadow(0 0 8px gold); } 50% { filter: brightness(1.6) drop-shadow(0 0 15px cyan); } 100% { filter: brightness(1.2) drop-shadow(0 0 8px gold); } }
+@keyframes smoke { 0% { transform: scale(0.2); opacity:0; } 15% { transform: scale(1.3); opacity:0.8; } 100% { opacity:0; } }
+@keyframes coinFloat { 0% { transform: translateY(0); } 50% { transform: translateY(-6px); } 100% { transform: translateY(0); } }
+@keyframes coinCollect { 0%, 18% { opacity:1; } 20% { transform: scale(1.9); } 23% { opacity:0; transform: scale(0); } 100% { opacity:0; } }
+@keyframes diamondShine { 0% { filter: brightness(1.2); } 50% { filter: brightness(1.6); } 100% { filter: brightness(1.2); } }
 </style>
 """, unsafe_allow_html=True)
 
-# CARRITO - SIN F-STRING PARA EVITAR ERROR
 modo_txt = "DIAMANTE ON" if st.session_state.modo_diamante else "NORMAL"
 coins_val = st.session_state.coins
-car_style_extra = "animation: driveCorrect 5.5s linear infinite, diamondShine 1.2s ease-in-out infinite;" if st.session_state.modo_diamante else "animation: driveCorrect 5.5s linear infinite;"
+car_extra = "animation: driveCorrect 5.5s linear infinite, diamondShine 1.2s ease-in-out infinite;" if st.session_state.modo_diamante else "animation: driveCorrect 5.5s linear infinite;"
 
-car_html_part1 = """
-<div style="position:relative; width:100%; height:124px; background: linear-gradient(90deg, #0F0F0F 0%, #1A1A1A 50%, #0F0F0F 100%); border:2px solid #FFD700; border-radius:16px; overflow:hidden; margin-bottom:10px; box-shadow:0 0 25px rgba(255,215,0,0.35)">
-  <div style="position:absolute; top:8px; left:16px; color:#FFD700; font-weight:900; font-size:11px; letter-spacing:1px; z-index:10">🏁 ESCUDERIA CHRISTIANLE • V35.1 FIX • 342 km/h PA' ADELANTE • """ + modo_txt + """ • 🪙 <span id="coinCount">""" + str(coins_val) + """</span> • 🔥 HEATMAP • 🏆 LEADERBOARD</div>
-  <div style="position:absolute; top:8px; right:16px; color:#00FF88; font-weight:800; font-size:10px; z-index:10">🏎️💨 PA' ADELANTE + 💎🪙 SONIDO</div>
-  <div style="position:absolute; top:32px; right:-350px; """ + car_style_extra + """ font-size:60px; z-index:8; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8));">🏎️</div>
-  <div style="position:absolute; top:46px; right:-20px; animation: smoke 5.5s ease-out infinite; font-size:26px; z-index:7">💨</div>
-  <div style="position:absolute; top:38px; left:72%; animation: coinFloat 0.9s ease-in-out infinite, coinCollect 5.5s linear infinite; font-size:26px; z-index:9; filter: drop-shadow(0 0 6px gold);">🪙</div>
-  <div style="position:absolute; top:40px; left:48%; animation: coinFloat 0.9s ease-in-out infinite 0.3s, coinCollect 5.5s linear infinite 1s; font-size:22px; z-index:9; filter: drop-shadow(0 0 6px gold);">🪙</div>
-  <div style="position:absolute; top:36px; left:24%; animation: coinFloat 0.9s ease-in-out infinite 0.6s, coinCollect 5.5s linear infinite 2s; font-size:24px; z-index:9">💎</div>
-  <div style="position:absolute; top:20px; left:22px; animation: flagwave 0.4s ease-in-out infinite alternate; font-size:42px; z-index:6">🏁</div>
-  <div style="position:absolute; bottom:10px; left:0; width:100%; height:6px; background: repeating-linear-gradient(90deg, white 0 22px, black 22px 44px); animation: road 0.3s linear infinite; z-index:2"></div>
-</div>
-"""
+p1 = '<div style="position:relative; width:100%; height:124px; background:#0F0F0F; border:2px solid #FFD700; border-radius:16px; overflow:hidden; margin-bottom:10px">'
+p1 += '<div style="position:absolute; top:8px; left:16px; color:#FFD700; font-weight:900; font-size:11px; z-index:10">ESCUDERIA CHRISTIANLE V35.2 ' + modo_txt + ' COINS ' + str(coins_val) + ' HEATMAP</div>'
+p1 += '<div style="position:absolute; top:32px; right:-350px; ' + car_extra + ' font-size:60px; z-index:8">🏎️</div>'
+p1 += '<div style="position:absolute; top:46px; right:-20px; animation: smoke 5.5s ease-out infinite; font-size:26px; z-index:7">💨</div>'
+p1 += '<div style="position:absolute; top:38px; left:72%; animation: coinFloat 0.9s ease-in-out infinite, coinCollect 5.5s linear infinite; font-size:26px; z-index:9">🪙</div>'
+p1 += '<div style="position:absolute; top:40px; left:48%; animation: coinFloat 0.9s ease-in-out infinite 0.3s, coinCollect 5.5s linear infinite 1s; font-size:22px; z-index:9">🪙</div>'
+p1 += '<div style="position:absolute; top:36px; left:24%; animation: coinFloat 0.9s ease-in-out infinite 0.6s, coinCollect 5.5s linear infinite 2s; font-size:24px; z-index:9">💎</div>'
+p1 += '<div style="position:absolute; top:20px; left:22px; animation: flagwave 0.4s ease-in-out infinite alternate; font-size:42px; z-index:6">🏁</div>'
+p1 += '<div style="position:absolute; bottom:10px; left:0; width:100%; height:6px; background: repeating-linear-gradient(90deg, white 0 22px, black 22px 44px); animation: road 0.3s linear infinite; z-index:2"></div>'
+p1 += '</div>'
 
-car_html_part2 = """
-<audio id="coinSound" preload="auto" src="https://cdn.pixabay.com/audio/2022/03/24/audio_2fba1d43b9.mp3"></audio>
-<script>
-var coins = """ + str(coins_val) + """;
-function playCoin() {
-  var c = document.getElementById('coinSound');
-  if (c) {
-    c.volume = 0.4;
-    c.currentTime = 0;
-    c.play().catch(function(){});
-  }
-  var e = document.getElementById('coinCount');
-  if (e) {
-    coins += 10;
-    e.textContent = coins;
-  }
-}
-setInterval(playCoin, 1900);
-</script>
-"""
+p2 = '<audio id="coinSound" preload="auto" src="https://cdn.pixabay.com/audio/2022/03/24/audio_2fba1d43b9.mp3"></audio>'
+p2 += '<script>var coins=' + str(coins_val) + '; function playCoin(){ var c=document.getElementById("coinSound"); if(c){ c.volume=0.4; c.currentTime=0; c.play().catch(function(){}); } } setInterval(playCoin,1900); </script>'
 
-st.markdown(car_html_part1 + car_html_part2, unsafe_allow_html=True)
+st.markdown(p1 + p2, unsafe_allow_html=True)
 
 c_top1, c_top2 = st.columns([3,1])
 with c_top2:
-    st.session_state.modo_diamante = st.toggle("💎 Modo Diamante Dorado", value=st.session_state.modo_diamante)
+    st.session_state.modo_diamante = st.toggle("Modo Diamante", value=st.session_state.modo_diamante)
 
 A_KEY=st.secrets["alpaca"]["API_KEY"]
 A_SECRET=st.secrets["alpaca"]["SECRET"]
@@ -88,14 +66,14 @@ client=TradingClient(A_KEY,A_SECRET,paper=True)
 c0,c1,c2,c3=st.columns([2,1,1,0.8])
 with c0: symbol=st.selectbox("Activo", ["BTC/USD","ETH/USD","AAPL","SOL/USD"], index=0, label_visibility="collapsed")
 with c1: 
-    if st.button("🏁 ANALIZAR", type="primary", use_container_width=True):
+    if st.button("ANALIZAR", type="primary", use_container_width=True):
         st.session_state.analizar=True; st.rerun()
 with c2:
-    if st.button("🚨 PANICO", use_container_width=True):
+    if st.button("PANICO", use_container_width=True):
         try: client.close_all_positions(cancel_orders=True); st.error("PANICO")
         except Exception as e: st.error(str(e))
 with c3:
-    st.session_state.auto_pilot = st.toggle("🤖 Auto", value=st.session_state.auto_pilot)
+    st.session_state.auto_pilot = st.toggle("Auto", value=st.session_state.auto_pilot)
 
 mapa={"BTC/USD":"BTC-USD","ETH/USD":"ETH-USD","AAPL":"AAPL","SOL/USD":"SOL-USD"}
 tk=mapa[symbol]
@@ -121,26 +99,25 @@ for i in range(30,len(h1y)-7):
 prob=np.mean(casos)*100 if casos else 47.1
 avg24=np.mean(g24) if g24 else -0.36; avg7=np.mean(g7) if g7 else 1.67
 if z < -2 and price < fib and -0.008 < lr < -0.0005:
-    sema_color = "VERDE"; sema_txt = "🟢 COMPRAR $10"; puede_comprar = True
+    sema_color = "VERDE"; sema_txt = "COMPRAR $10"; puede_comprar = True
 else:
     if z > 0 or lr < -0.05:
-        sema_color = "ROJO"; sema_txt = "🔴 Freno total"; puede_comprar = False
+        sema_color = "ROJO"; sema_txt = "Freno total"; puede_comprar = False
     else:
-        sema_color = "AMARILLO"; sema_txt = "🟡 Esperas"; puede_comprar = False
+        sema_color = "AMARILLO"; sema_txt = "Esperas"; puede_comprar = False
 orden_msg = ""; venta_msg = ""; cooldown_ok = True
 if st.session_state.last_buy_time:
     cooldown_ok = datetime.now() - st.session_state.last_buy_time > timedelta(hours=1)
 
 st.markdown(f"""
 <div class="semaforo-box">
- <div style="color:#FFD700; font-weight:900; font-size:16px">🏎️ F1 SEMÁFORO - Cómo leer en 30 seg {"🤖 AUTO ON" if st.session_state.auto_pilot else ""}</div>
- <div style="color:#8A93A8; font-size:12px; margin-bottom:10px">Sin fórmulas. Solo 3 preguntas para no perder tu poco dinero.</div>
+ <div style="color:#FFD700; font-weight:900; font-size:16px">F1 SEMAFORO - 30 seg {"AUTO ON" if st.session_state.auto_pilot else ""}</div>
+ <div style="color:#8A93A8; font-size:12px; margin-bottom:10px">Sin formulas. Solo 3 preguntas.</div>
  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px">
-  <div style="border-left:3px solid #FFD700; background:#10131C; border-radius:12px; padding:10px"><div style="color:#F0F0F0; font-weight:700; font-size:12px">1. ¿Está barato? Fib 0.618</div><div style="color:#8A93A8; font-size:11px; margin-top:4px">Si BTC está abajo, es aguacate en oferta.<br>${price:,.0f} vs ${fib:,.0f} normal.</div></div>
-  <div style="border-left:3px solid #00FF88; background:#10131C; border-radius:12px; padding:10px"><div style="color:#F0F0F0; font-weight:700; font-size:12px">2. ¿Está regalado? z= {z:.2f}</div><div style="color:#8A93A8; font-size:11px; margin-top:4px">z= {z:.2f} súper regalado.</div></div>
-  <div style="border-left:3px solid #FF4D4D; background:#10131C; border-radius:12px; padding:10px"><div style="color:#F0F0F0; font-weight:700; font-size:12px">3. ¿Se cae a pedazos? log {lr*100:.2f}%</div><div style="color:#8A93A8; font-size:11px; margin-top:4px">{lr*100:.2f}% = normal. -5% = crash.</div></div>
+  <div style="border-left:3px solid #FFD700; background:#10131C; border-radius:12px; padding:10px"><div style="color:#F0F0F0; font-weight:700; font-size:12px">1. Barato? Fib 0.618</div><div style="color:#8A93A8; font-size:11px">${price:,.0f} vs ${fib:,.0f}</div></div>
+  <div style="border-left:3px solid #00FF88; background:#10131C; border-radius:12px; padding:10px"><div style="color:#F0F0F0; font-weight:700; font-size:12px">2. Regalado? z= {z:.2f}</div><div style="color:#8A93A8; font-size:11px">z= {z:.2f}</div></div>
+  <div style="border-left:3px solid #FF4D4D; background:#10131C; border-radius:12px; padding:10px"><div style="color:#F0F0F0; font-weight:700; font-size:12px">3. Se cae? log {lr*100:.2f}%</div><div style="color:#8A93A8; font-size:11px">{lr*100:.2f}%</div></div>
  </div>
- <div style="color:#D4C44A; font-size:11px; margin-top:10px">🟢 VERDE = Compra $10-$15 | 🟡 AMARILLO = Esperas | 🔴 ROJO = Freno | ⏳ 1h | 💰 Vende 50% si +2%</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -148,7 +125,6 @@ try:
     positions = client.get_all_positions()
     account = client.get_account()
     total = float(account.equity)
-    pl_total = total - 100000
     equity_file = "equity_log.json"; tp_file = "tp_marks.json"; buy_file = "buy_marks.json"
     hist=[]; tp_marks=[]; buy_marks=[]
     if os.path.exists(equity_file):
@@ -194,30 +170,18 @@ try:
                     tp_marks.append({"idx": len(hist)-1, "symbol": p.symbol, "pct": pct, "eq": total, "t": datetime.now().strftime("%H:%M")})
                     tp_marks=tp_marks[-50:]
                     with open(tp_file,"w") as f: json.dump(tp_marks,f)
-        except: pass
+        except Exception:
+            pass
 
-    pl_color="#00FF88" if pl_total>=0 else "#FF4D4D"
-    st.markdown(f"""<div style="border:1.5px solid #FFD700; border-radius:14px; padding:10px 16px; background:#0B0F1A; margin-bottom:10px"><span style="color:#FFD700; font-weight:800; font-size:12px">💰 ALPACA PAPER • Total ${total:,.2f} • P/L <span style='color:{pl_color}'>{pl_total:+.2f}</span> • {symbol} • {orden_msg} • 🪙 {st.session_state.coins} • 🔥 HEATMAP • 💎 {modo_txt}</span> <span style="color:#8A93A8; font-size:10px; float:right">escuderia ChristianLE</span></div>""", unsafe_allow_html=True)
-    c_alp1, c_alp2 = st.columns(2)
-    with c_alp1:
-        if st.button("💰 Ver en Alpaca →", use_container_width=True):
-            st.session_state.show_alpaca = not st.session_state.show_alpaca
-    with c_alp2:
-        st.link_button("🔗 Abrir Dashboard Alpaca", "https://app.alpaca.markets/brokerage/dashboard/overview", use_container_width=True)
-    if st.session_state.show_alpaca:
-        st.markdown(f"<div class='port-card'>🏦 <b>Escudería {st.session_state.perfil_nombre}</b> • Equity ${total:,.2f} • Cash ${float(account.cash):,.2f} • Auto {'ON 🤖' if st.session_state.auto_pilot else 'OFF'}</div>", unsafe_allow_html=True)
-        for p in positions:
-            pl=float(p.unrealized_pl); pct=float(p.unrealized_plpc)*100 if hasattr(p,'unrealized_plpc') else 0
-            st.markdown(f"**{'🟢' if pl>=0 else '🔴'} {p.symbol}** {float(p.qty):.6f} • ${float(p.market_value):.2f} • P/L {pl:+.2f} ({pct:+.2f}%)", unsafe_allow_html=True)
+    st.markdown(f"<div style='border:1.5px solid #FFD700; border-radius:14px; padding:10px; background:#0B0F1A;'><span style='color:#FFD700; font-weight:800; font-size:12px'>ALPACA ${total:,.2f} P/L {(total-100000):+.2f} {symbol} {orden_msg} COINS {st.session_state.coins}</span></div>", unsafe_allow_html=True)
 
     if len(hist) > 1:
-        st.markdown("<div class='equity-box'>🏁 <b>CIRCUIT INTERLAGOS HD - MARCAS DE LLANTA • 🟢 Compra | 💨 Take Profit +2% • 🔥 MAPA DE CALOR ON</b></div>", unsafe_allow_html=True)
+        st.markdown("<div class='equity-box'><b>CIRCUIT INTERLAGOS HD - HEATMAP ON</b></div>", unsafe_allow_html=True)
         eq_vals=np.array([h["eq"] for h in hist])
-        pnl=eq_vals[-1]-100000; pnl_pct=(eq_vals[-1]/100000-1)*100
         eq_min, eq_max=np.min(eq_vals), np.max(eq_vals)
         eq_norm=(eq_vals-eq_min)/(eq_max-eq_min+1) if eq_max!=eq_min else np.zeros_like(eq_vals)*0.5+0.5
         x=np.linspace(0,12,len(eq_vals))
-        track_center_y=np.sin(x*0.6)*0.5 + np.sin(x*1.8)*0.25 + np.cos(x*0.4)*0.15
+        track_center_y=np.sin(x*0.6)*0.5 + np.sin(x*1.8)*0.25
         track_width=0.55
         fig2, ax2=plt.subplots(figsize=(12,5))
         fig2.patch.set_facecolor("#0F0F0F"); ax2.set_facecolor("#1A1A1A")
@@ -237,53 +201,57 @@ try:
                 ax2.fill_between([x[i], x[i+1]], [track_center_y[i]-track_width, track_center_y[i+1]-track_width], [track_center_y[i]+track_width, track_center_y[i+1]+track_width], color="#2B2B2B", zorder=1)
         ax2.plot(x, track_center_y+track_width, color="white", linewidth=3, zorder=2)
         ax2.plot(x, track_center_y-track_width, color="white", linewidth=3, zorder=2)
-        ax2.axvline(x[0], color="white", linewidth=3, zorder=4)
         racing_line_y=track_center_y + (eq_norm-0.5)*(track_width*1.2)
         ax2.plot(x, racing_line_y, color="#00FFFF" if st.session_state.modo_diamante else "#FFD700", linewidth=4.5, zorder=6)
         for mark in buy_marks:
             idx=mark["idx"]
             if idx < len(x):
-                ax2.scatter([x[idx]], [racing_line_y[idx]], s=200+heat_norm[idx]*200, color="#00FF88", marker="o", edgecolors="white", linewidths=2, zorder=9)
-        ax2.scatter([x[-1]], [racing_line_y[-1]], s=260, color="#00FFFF" if st.session_state.modo_diamante else "#00FF88", edgecolors="white", linewidths=2.5, zorder=14)
+                ax2.scatter([x[idx]], [racing_line_y[idx]], s=200, color="#00FF88", marker="o", edgecolors="white", linewidths=2, zorder=9)
         ax2.set_xlim(-0.6,13); ax2.set_ylim(-1.6,1.6); ax2.axis('off')
         fig2.tight_layout(); st.pyplot(fig2)
-        if buy_marks:
-            ultimos = " | ".join([f"BUY {b['symbol']} {b['t']}" for b in buy_marks[-2:]])
-            st.markdown(f"<div style='color:#8A93A8; font-size:11px; margin-top:4px'>Últimos: {ultimos}</div>", unsafe_allow_html=True)
 
 except Exception as e:
     st.error(f"Alpaca: {e}")
 
 st.markdown(f"""
 <div style="display:grid; grid-template-columns: 1.2fr 0.6fr 0.7fr; gap:12px; margin:16px 0">
- <div><div style="color:#FFD700; font-weight:900; font-size:32px">${price:,.0f}...</div><div style="font-size:10px; padding:4px 10px; border-radius:20px; background:rgba(0,255,136,0.15); color:#00FF88; display:inline-block">↑ Fib: ${fib:,.2f}</div></div>
- <div><div style="color:#FFD700; font-weight:900; font-size:32px">{z:.2f}</div><div style="font-size:10px; padding:4px 10px; border-radius:20px; background:rgba(0,255,136,0.15); color:#00FF88; display:inline-block">↑ Compra si < -2</div></div>
- <div><div style="color:#FFD700; font-weight:900; font-size:32px">{lr*100:.3f}%</div><div style="font-size:10px; padding:4px 10px; border-radius:20px; background:rgba(255,70,70,0.15); color:#FF6B7A; display:inline-block">↓ -0.8% a -0.05%</div></div>
+ <div><div style="color:#FFD700; font-weight:900; font-size:32px">${price:,.0f}...</div><div style="font-size:10px; padding:4px 10px; border-radius:20px; background:rgba(0,255,136,0.15); color:#00FF88; display:inline-block">Fib: ${fib:,.2f}</div></div>
+ <div><div style="color:#FFD700; font-weight:900; font-size:32px">{z:.2f}</div><div style="font-size:10px; padding:4px 10px; border-radius:20px; background:rgba(0,255,136,0.15); color:#00FF88; display:inline-block">Compra si -2</div></div>
+ <div><div style="color:#FFD700; font-weight:900; font-size:32px">{lr*100:.3f}%</div><div style="font-size:10px; padding:4px 10px; border-radius:20px; background:rgba(255,70,70,0.15); color:#FF6B7A; display:inline-block">-0.8 a -0.05</div></div>
 </div>
 """, unsafe_allow_html=True)
-st.markdown(f"<div style='background:{'#00FF88' if puede_comprar else '#2A2A2A'}; color:{'#000' if puede_comprar else '#888'}; font-weight:900; padding:12px; border-radius:10px; text-align:center'>{sema_txt} • {orden_msg} {venta_msg}</div>", unsafe_allow_html=True)
 fig, ax=plt.subplots(figsize=(10,4))
 fig.patch.set_facecolor("#10131C"); ax.set_facecolor("#10131C")
 ax.plot(precios, color="#00FF87", linewidth=2.5)
 ax.axhline(xb, color="#3A8B8B", linewidth=1, alpha=0.8)
 ax.axhline(fib, color="#FFD500", ls="--", linewidth=1.2)
-ax.scatter([len(precios)-1],[price], s=120, color="#00FF4C", zorder=5, edgecolors="#10131C", linewidths=2)
 ax.tick_params(colors="#6B7280", labelsize=9)
 for sp in ax.spines.values(): sp.set_visible(False)
 st.pyplot(fig)
 b1,b2,b3,b4=st.columns(4)
-with b1: st.markdown(f"<div class='box'>⏱️ <b>24 HORAS</b><br>{ret24:.2f}%</div>", unsafe_allow_html=True)
-with b2: st.markdown(f"<div class='box'>📅 <b>7 DÍAS</b><br>{ret7:.2f}%</div>", unsafe_allow_html=True)
-with b3: st.markdown(f"<div class='box'>📅 <b>30 DÍAS</b><br>{ret30:.2f}%</div>", unsafe_allow_html=True)
-with b4: st.markdown(f"<div class='box'>🏔️ <b>vs MAX 1 AÑO</b><br>{vsmax:.2f}%</div>", unsafe_allow_html=True)
-st.markdown(f"<div class='backtest'>🧠 <b>BACKTEST</b><br>{len(casos)} casos | Prob rebote 24h: {prob:.1f}% • 24h {avg24:.2f}% | 7d {avg7:.2f}%<br>⚠️ {sema_color}: {sema_txt}</div>", unsafe_allow_html=True)
-st.markdown(f"<div style='background:#0B1A13; border:1.5px solid #00FF88; padding:12px; border-radius:10px; margin-top:12px; color:#4ADE80; font-weight:700; font-size:12px'>🟢 VERDE: {sema_txt} • {orden_msg} • Auto {'ON 🤖' if st.session_state.auto_pilot else 'OFF'}</div>", unsafe_allow_html=True)
+with b1: st.markdown(f"<div class='box'>24 HORAS<br>{ret24:.2f}%</div>", unsafe_allow_html=True)
+with b2: st.markdown(f"<div class='box'>7 DIAS<br>{ret7:.2f}%</div>", unsafe_allow_html=True)
+with b3: st.markdown(f"<div class='box'>30 DIAS<br>{ret30:.2f}%</div>", unsafe_allow_html=True)
+with b4: st.markdown(f"<div class='box'>vs MAX 1 ANO<br>{vsmax:.2f}%</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='backtest'>BACKTEST<br>{len(casos)} casos | Prob {prob:.1f}%<br>{sema_color}: {sema_txt}</div>", unsafe_allow_html=True)
 
-# TABLA POSICIONES
 try:
     leaderboard_data=[]
     for p in positions:
         try:
             pct=float(p.unrealized_plpc)*100 if hasattr(p,'unrealized_plpc') else 0
-            leaderboard_data.append({"symbol":p.symbol, "qty":float(p.qty), "value":float(p.market_value), "pl":float(p.unrealized_pl), "pct":pct})
-        except: pas
+            leaderboard_data.append({"symbol":p.symbol, "value":float(p.market_value), "pl":float(p.unrealized_pl), "pct":pct})
+        except Exception:
+            pass
+    if leaderboard_data:
+        st.markdown("<div class='leaderboard'><div style='color:#FFD700; font-weight:900; font-size:12px;'>TABLA DE POSICIONES</div></div>", unsafe_allow_html=True)
+        sorted_data = sorted(leaderboard_data, key=lambda x: x["pct"], reverse=True)
+        for idx, row in enumerate(sorted_data[:10]):
+            if idx==0: emoji="🥇"
+            elif idx==1: emoji="🥈"
+            elif idx==2: emoji="🥉"
+            else: emoji=str(idx+1)+"."
+            color = "#00FF88" if row["pl"]>=0 else "#FF4D4D"
+            st.markdown(f"<div style='display:flex; justify-content:space-between; padding:6px 0; font-size:12px'><span>{emoji} {row['symbol']}</span><span style='color:{color}'>{row['pl']:+.2f} ({row['pct']:+.2f}%)</span></div>", unsafe_allow_html=True)
+except Exception:
+    pass
