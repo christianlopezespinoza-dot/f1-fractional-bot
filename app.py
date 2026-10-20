@@ -149,3 +149,13 @@ if st.session_state.analizar:
 
     st.success(f"✅ Orden REAL $10 enviada - F1 ANALIZANDO")
     st.success(f"🟢 {texto} - Backtest {prob:.1f}% prob rebote")
+
+if st.button("📊 CHECAR ALPACA"):
+    try:
+        pos = client.get_all_positions()
+        for p in pos:
+            st.write(f"{p.symbol} | {p.qty} | ${float(p.market_value):.2f} | P/L {float(p.unrealized_pl):.2f}")
+        if not pos:
+            st.warning("No hay posiciones, aún no compra")
+    except Exception as e:
+        st.error(str(e))
