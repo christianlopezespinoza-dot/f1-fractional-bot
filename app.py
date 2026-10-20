@@ -91,10 +91,13 @@ if iniciar:
     m3.metric("log ret", f"{lr*100:.3f}%")
     m4.markdown(f"<div style='background:{color};color:black;padding:12px;border-radius:10px;text-align:center'><b>{texto}</b></div>", unsafe_allow_html=True)
 
-    fig,ax=plt.subplots(figsize=(11,4.5))
+        fig,ax=plt.subplots(figsize=(11,4.5))
     fig.patch.set_facecolor(bg); ax.set_facecolor(bg)
     ax.plot(precios, color=primary, linewidth=2, label='Precio')
     ax.axhline(fib, color=title_color, linestyle='--', label='Fib 61.8%')
     ax.axhline(xb, color='cyan', alpha=0.4, label='Media Quant')
-    if estado=="VERDE": ax.scatter(len(precios)-1, price, color='lime', s=150, edgecolors='white', zorder=5)
-    ax.legend(facecolor=bg, edgecolor=title_color, labelcolor='white
+    if estado=="VERDE":
+        ax.scatter(len(precios)-1, price, color='lime', s=150, edgecolors='white', zorder=5)
+    ax.legend(facecolor=bg, edgecolor=title_color, labelcolor="white")
+    ax.tick_params(colors='white')
+    st.pyplot(fig)
