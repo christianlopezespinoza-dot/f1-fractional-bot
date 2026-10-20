@@ -11,7 +11,7 @@ def notificar_f1(mensaje):
         requests.post(url, data=data, timeout=10)
     except: pass
 
-def responder_comandos():
+def responder_comando():
     try:
         url = f"https://api.telegram.org/bot{T_TOKEN}/getUpdates"
         r = requests.get(url, timeout=5).json()
