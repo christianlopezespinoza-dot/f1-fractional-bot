@@ -21,8 +21,10 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 from bot_telegram import notificar_f1
+from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="F1 V21 SEMAFORO PRO", page_icon="🏎️", layout="wide")
+st_autorefresh(interval=15*60*1000, key="f1v21_auto")
 
 # SECRETS
 A_KEY = st.secrets["alpaca"]["API_KEY"]
