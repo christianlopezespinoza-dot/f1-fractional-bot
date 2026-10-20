@@ -105,40 +105,39 @@ if iniciar or auto_count > 0:
         if symbol=="ETH/USD": ticker="ETH-USD"
         h = yf.Ticker(ticker).history(period="1mo")
         precios = h['Close'].values
-        fib = h['High'].max()-(h['High'].max()-h['Low'].min())*0.
+        fib = h['High'].max()-(h['High'].max()-h['Low'].min())*0.618
         price = precios[-1]
         x_bar, s, z, log_ret = calcular_quant(precios)
         estado, texto, color = get_semaforo(price, fib, z, log_ret)
 
-    # METRICAS PRO
-    m1,m2,m3,m4 = st.columns(4)
-    m1.metric(symbol, f"${price:,.2f}", f"Fib: ${fib:,.2f}")
-    m2.metric("z-score", f"{z:.2f}", "Compra si < -2")
-    m3.metric("log ret", f"{log_ret*100:.3f}%", "-0.8% a -0.02% ideal")
-    m4.markdown(f"<div style='background:{color}; color:black; padding:18px; border-radius:12px; text-align:center; font-weight:900; font-size:20px;'>{texto}<br><span style='font-size:12px;'>{estado}</span></div>", unsafe_allow_html=True)
+        # METRICAS PRO
+        m1,m2,m3,m4 = st.columns(4)
+        m1.metric(symbol, f"${price:,.2f}", f"Fib: ${fib:,.2f}")
+        m2.metric("z-score", f"{z:.2f}", "Compra si < -2")
+        m3.metric("log ret", f"{log_ret*100:.3f}%", "-0.8% a -0.05%")
+        m4.markdown(f"<div style='background:{color}; color:black; padding:10px; border-radius:10px'><b>{texto}</b></div>", unsafe_allow_html=True)
 
-    # GRAFICO
-    fig, ax = plt.subplots(figsize=(10,4))
-    fig.patch.set_facecolor('#0E1117'); ax.set_facecolor('#0E1117')
-    ax.plot(precios, color='#00FF88', label='Precio')
-    ax.axhline(fib, color='gold', linestyle='--', label='Fib 0.618 Barato')
-    ax.axhline(x_bar, color='cyan', alpha=0.4, label='Media')
-    if estado=="VERDE": ax.scatter(len(precios)-1, price, color='white', s=200, edgecolors='gold', linewidth=2, zorder=5)
-    ax.legend(facecolor='#0E1117', edgecolor='gold', labelcolor='white')
-    ax.tick_params(colors='white'); st.pyplot(fig)
+        # GRAFICO
+        fig, ax = plt.subplots(figsize=(10,4))
+        fig.patch.set_facecolor('#0E1117'); ax.set_facecolor('#0E1117')
+        ax.plot(precios, color='#00FF88', label='Precio')
+        ax.axhline(fib, color='gold', linestyle='--', label='Fib')
+        ax.axhline(x_bar, color='cyan', alpha=0.4, label='Media')
+        if estado=="VERDE": ax.scatter(len(precios)-1, price, color='lime', s=100)
+        ax.legend(facecolor='#0E1117', edgecolor='gold', labelcolor='white')
+        ax.tick_params(colors='white'); st.pyplot(fig)
 
-    # TELEGRAM SONIDO
-    if estado=="VERDE":
-        notificar_f1(symbol, "$2", price, tipo="verde", fib=fib, z=z, log=log_ret)
-        st.success(f"✅ Señal VERDE detectada. Si fuera real, comprarías $2 de {symbol}. Sonido F1 largo enviado.")
-    elif estado=="ROJO":    
-        notificar_f1(symbol, "$2", price, tipo="rojo", fib=fib, z=z, log=log_ret)
-        st.error("🔴 ROJO - No comprar, te cuida tu dinero.")
-    else:
-        st.warning("🟡 AMARILLO - Esperar. No perder también es ganar.")
+        # SEMAFORO Y TELEGRAM
+        if estado=="VERDE":
+            st.success(f"🟢 VERDE: {texto}")
+            notificar_f1(f"🟢 VERDE {symbol} ${price:.2f} z={z:.2f} log={log_ret*100:.3f}% - COMPRANDO")
+        elif estado=="ROJO":
+            st.error(f"🔴 ROJO: {texto}")
+            notificar_f1(f"🔴 ROJO {symbol} ${price:.2f} - VENDIENDO")
+        else:
+            st.warning(f"🟡 AMARILLO: {texto}")
 
-    st.caption(f"z=(x̄-μ0)/(σ/√n) | log=ln(Pt/Pt-1) | V21 -0.008 conservador para $30 reales | {datetime.now().strftime('%H:%M:%S')}")
     except Exception as e:
         print(f"Error {e} - reintentando")
-        st.warning(f"Error temporal {e}, reintenta en 30s")
+        st.warning(f"Error temporal {e}, reintenta en 5s")
         time.sleep(5)
