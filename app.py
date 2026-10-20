@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title="F1 V47.4 FINAL", layout="wide", page_icon="🏁")
+st.set_page_config(page_title="F1 V47.5 B", layout="wide", page_icon="🏁")
 import yfinance as yf, numpy as np, matplotlib.pyplot as plt, requests
 from datetime import datetime, timedelta
 import os, json
@@ -110,15 +110,14 @@ if st.session_state.last_buy_time:
 else:
     orden_msg="Listo para comprar"; cooldown_pct=100
 
-# CARRITO LIMPIO SIN SEMAFORO
 car_html=f'''
 <div style="position:relative;width:100%;height:110px;background:linear-gradient(90deg,#0F0F0F 0%,#1A1A1A 50%,#0F0F0F 100%);border:2px solid #FFD700;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 0 25px rgba(255,215,0,0.35)">
- <div style="position:absolute;top:8px;left:16px;color:#FFD700;font-weight:900;font-size:11px;z-index:10">🏁 V47.4 - {sema_color} - 15 DIAS - CARRITO LIMPIO</div>
+ <div style="position:absolute;top:8px;left:16px;color:#FFD700;font-weight:900;font-size:11px;z-index:10">🏁 V47.5 B - {sema_color}</div>
+ <div style="position:absolute;top:14px;left:18px;animation:flagwave 0.4s infinite alternate;font-size:42px;z-index:10">🏁</div>
  <div style="position:absolute;top:32px;right:-350px;animation:drive 5.5s linear infinite;font-size:60px;z-index:8">🏎️</div>
  <div style="position:absolute;top:38px;left:72%;animation:coinFloat 0.9s infinite,coinCollect 5.5s infinite;font-size:26px;z-index:9">🪙</div>
  <div style="position:absolute;top:40px;left:48%;animation:coinFloat 0.9s infinite 0.3s,coinCollect 5.5s infinite 1s;font-size:22px;z-index:9">🪙</div>
  <div style="position:absolute;top:36px;left:24%;animation:coinFloat 0.9s infinite 0.6s,coinCollect 5.5s infinite 2s;font-size:24px;z-index:9">💎</div>
- <div style="position:absolute;top:20px;left:110px;animation:flagwave 0.4s infinite alternate;font-size:42px;z-index:6">🏁</div>
  <div style="position:absolute;bottom:10px;left:0;width:100%;height:6px;background:repeating-linear-gradient(90deg,white 0 22px,black 22px 44px);animation:road 0.3s linear infinite;z-index:2"></div>
 </div>
 '''
@@ -143,54 +142,45 @@ try:
     else:
         st.session_state.coins=130
 
-    st.markdown(f"<div class='ultimate-bar'><span style='color:#FFD700;font-weight:900;font-size:13px'>💎 V47.4 • {symbol} ${price:,.2f} • {sema_txt} • {orden_msg}</span> <span style='color:#8A93A8;float:right;font-weight:700;font-size:12px'>💰 ${total:,.2f} • 🪙 {st.session_state.coins} • 🔥 {heat_buys} • 🏆 {leader} • Hoy {st.session_state.buys_today}/5</span></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='ultimate-bar'><span style='color:#FFD700;font-weight:900;font-size:13px'>💎 V47.5 B • {symbol} ${price:,.2f} • {sema_txt} • {orden_msg}</span> <span style='color:#8A93A8;float:right;font-weight:700;font-size:12px'>💰 ${total:,.2f} • 🪙 {st.session_state.coins} • 🔥 {heat_buys} • 🏆 {leader} • Hoy {st.session_state.buys_today}/5</span></div>", unsafe_allow_html=True)
 
-    verde_fib = "#00FF88" if price < fib else "#1A3A2A"
-    shadow_fib = "0 0 18px #00FF88" if price < fib else "none"
-    verde_z = "#00FF88" if z < -2 else "#1A3A2A"
-    amarillo_z = "#FFD700" if -2 <= z < 0 else "#3A3520"
-    rojo_z = "#FF4D4D" if z >= 0 else "#3A1A1A"
-    if z < -2:
-        color_z_on = verde_z
-        shadow_z = "0 0 18px #00FF88"
-    elif -2 <= z < 0:
-        color_z_on = amarillo_z
-        shadow_z = "0 0 18px #FFD700"
+    if sema_color == "VERDE":
+        color_general = "#00FF88"
+        shadow_general = "0 0 20px #00FF88"
+        txt1 = "🟢 BARATO"
+        txt2 = "🟢 REGALADO"
+        txt3 = "🟢 COMPRA"
+    elif sema_color == "ROJO":
+        color_general = "#FF4D4D"
+        shadow_general = "0 0 20px #FF4D4D"
+        txt1 = "🔴 CARO"
+        txt2 = "🔴 CARO"
+        txt3 = "🔴 FRENO"
     else:
-        color_z_on = rojo_z
-        shadow_z = "0 0 18px #FF4D4D"
-    
-    if -0.008 < lr < -0.0005:
-        color_crash_on = "#00FF88"
-        shadow_crash = "0 0 18px #00FF88"
-        txt_crash = "🟢 RANGO COMPRA"
-    elif lr < -0.05:
-        color_crash_on = "#FF4D4D"
-        shadow_crash = "0 0 18px #FF4D4D"
-        txt_crash = "🔴 CRASH FUERTE"
-    else:
-        color_crash_on = "#FFD700"
-        shadow_crash = "0 0 18px #FFD700"
-        txt_crash = "🟡 ESPERA"
+        color_general = "#FFD700"
+        shadow_general = "0 0 20px #FFD700"
+        txt1 = "🟡 ESPERA"
+        txt2 = "🟡 MEDIO"
+        txt3 = "🟡 ESPERA"
 
     st.markdown(f"""
 <div class="semaforo-box">
  <div style="color:#FFD700;font-weight:900;font-size:16px">🚦 F1 SEMÁFORO - LECTURA RÁPIDA {"🤖 AUTO ON" if st.session_state.auto_pilot else ""} - {sema_color}</div>
  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px">
-  <div style="border-left:3px solid #FFD700;background:#10131C;border-radius:12px;padding:12px;text-align:center">
-    <div style="display:flex;justify-content:center;margin-bottom:8px"><div style="width:18px;height:18px;border-radius:50%;background:{verde_fib};box-shadow:{shadow_fib};border:1px solid #222"></div></div>
+  <div style="border-left:3px solid {color_general};background:#10131C;border-radius:12px;padding:12px;text-align:center">
+    <div style="display:flex;justify-content:center;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;background:{color_general};box-shadow:{shadow_general};border:1px solid #222"></div></div>
     <div style="color:#F0F0F0;font-weight:700">1. ¿Barato? Fib</div><div style="color:#8A93A8;font-size:12px">${price:,.0f} vs ${fib:,.0f}</div>
-    <div style="color:{verde_fib};font-size:10px;margin-top:4px">{"🟢 BARATO" if price < fib else "🔴 CARO"}</div>
+    <div style="color:{color_general};font-size:11px;margin-top:4px;font-weight:800">{txt1}</div>
   </div>
-  <div style="border-left:3px solid #00FF88;background:#10131C;border-radius:12px;padding:12px;text-align:center">
-    <div style="display:flex;justify-content:center;margin-bottom:8px"><div style="width:18px;height:18px;border-radius:50%;background:{color_z_on};box-shadow:{shadow_z};border:1px solid #222"></div></div>
+  <div style="border-left:3px solid {color_general};background:#10131C;border-radius:12px;padding:12px;text-align:center">
+    <div style="display:flex;justify-content:center;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;background:{color_general};box-shadow:{shadow_general};border:1px solid #222"></div></div>
     <div style="color:#F0F0F0;font-weight:700">2. ¿Regalado? z={z:.2f}</div><div style="color:#8A93A8;font-size:12px">z={z:.2f}</div>
-    <div style="font-size:10px;margin-top:4px;color:{color_z_on}">{"🟢 REGALADO" if z < -2 else "🟡 MEDIO" if z < 0 else "🔴 CARO"}</div>
+    <div style="font-size:11px;margin-top:4px;color:{color_general};font-weight:800">{txt2}</div>
   </div>
-  <div style="border-left:3px solid #FF4D4D;background:#10131C;border-radius:12px;padding:12px;text-align:center">
-    <div style="display:flex;justify-content:center;margin-bottom:8px"><div style="width:18px;height:18px;border-radius:50%;background:{color_crash_on};box-shadow:{shadow_crash};border:1px solid #222"></div></div>
+  <div style="border-left:3px solid {color_general};background:#10131C;border-radius:12px;padding:12px;text-align:center">
+    <div style="display:flex;justify-content:center;margin-bottom:8px"><div style="width:20px;height:20px;border-radius:50%;background:{color_general};box-shadow:{shadow_general};border:1px solid #222"></div></div>
     <div style="color:#F0F0F0;font-weight:700">3. ¿Crash? {lr*100:.2f}%</div><div style="color:#8A93A8;font-size:12px">{lr*100:.2f}%</div>
-    <div style="font-size:10px;margin-top:4px;color:{color_crash_on}">{txt_crash}</div>
+    <div style="font-size:11px;margin-top:4px;color:{color_general};font-weight:800">{txt3}</div>
   </div>
  </div>
 </div>
@@ -275,9 +265,6 @@ with b2: st.markdown(f"<div class='box'>7D<br>{ret7:.2f}%</div>", unsafe_allow_h
 with b3: st.markdown(f"<div class='box'>30D<br>{ret30:.2f}%</div>", unsafe_allow_html=True)
 with b4: st.markdown(f"<div class='box'>MAX<br>{vsmax:.2f}%</div>", unsafe_allow_html=True)
 st.markdown(f"<div class='backtest'>BACKTEST {len(casos)} casos Prob {prob:.1f}% 24h {avg24:.2f}% 7d {avg7:.2f}% {sema_color} {sema_txt}</div>", unsafe_allow_html=True)
-# =========================================================
-# MERCADO PAGO - 15 DIAS - SIN ERROR
-# =========================================================
 st.markdown("---")
 
 @st.cache_data(ttl=120)
@@ -330,7 +317,6 @@ if prices_usd_mp is None:
 
 prices_plot_mp=prices_mxn_mp
 
-# FIX SIN TERNARY - NO DA ERROR
 if len(prices_plot_mp) > 1:
     if prices_plot_mp[0] != 0:
         change_mp = (prices_plot_mp[-1] / prices_plot_mp[0] - 1) * 100
@@ -375,4 +361,4 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.caption("⚡ V47.4 FINAL • 15 días sin error • Carrito limpio • Luces arriba de cada lectura • FAST")
+st.caption("⚡ V47.5 B • 15 días sin error • Carrito limpio bandera esquina • 3 focos mismo color • FAST")
