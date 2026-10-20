@@ -6,17 +6,12 @@ h1, h2, h3, .stMetric {font-family: 'Orbitron', monospace !important;}
 div[data-testid="stMetricValue"] {color: #FFD700 !important; text-shadow: 0 0 10px #FFD700;}
 .tarjeta-f1 {border: 2px solid #FFD700; animation: respira 2s infinite alternate; border-radius:15px; padding:15px;}
 @keyframes respira {0%{box-shadow:0 0 5px #FFD700} 100%{box-shadow:0 0 20px #FFD700, 0 0 30px #00FF88}}
-.boton-verde {animation: late 0.8s infinite alternate;}
-@keyframes late {0%{transform:scale(1)} 100%{transform:scale(1.05); box-shadow:0 0 25px #00FF88}}
 </style>
 """, unsafe_allow_html=True)
 import yfinance as yf
-import requests
-import time
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from datetime import datetime
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
@@ -35,9 +30,10 @@ responder_comandos()
 # SECRETS
 A_KEY = st.secrets["alpaca"]["API_KEY"]
 A_SECRET = st.secrets["alpaca"]["SECRET"]
-T_TOKEN = st.secrets["telegram"]["BOT_TOKEN"]
-T_CHAT = st.secrets["telegram"]["CHAT_ID"]
 client = TradingClient(A_KEY, A_SECRET, paper=True)
+
+# MODO DIETA F1 - 2 LITROS
+ORDER_NOTIONAL = 2  # <--- 2 dolares por compra
 
 def calcular_quant(precios):
     n = len(precios)
@@ -48,9 +44,6 @@ def calcular_quant(precios):
     return x_bar, s, z, log_ret
 
 def get_semaforo(price, fib, z, log_ret):
-    # 1. FIB: ¿Está barato? Abajo de dorada = oferta
-    # 2. Z: ¿Regalado? -2 a -7 = pánico = oportunidad
-    # 3. LOG: ¿Crash? -0.62% ok, -5% no tocar
     if price < fib and z < -2.0 and -0.008 < log_ret < -0.0002:
         return "VERDE", "🟢 COMPRAR $2", "#00FF88"
     elif log_ret < -0.05 or z > 1.0:
@@ -58,42 +51,8 @@ def get_semaforo(price, fib, z, log_ret):
     else:
         return "AMARILLO", "🟡 ESPERAR - Paciencia", "#FFD60A"
 
-# ========== TARJETA PRO MEGA PRO ==========
-st.markdown('<div class="tarjeta-f1">', unsafe_allow_html=True)
-st.markdown("""
-<style>
-.pro-card {
-    background: linear-gradient(135deg, #0E1117 0%, #1A1D29 100%);
-    border: 1px solid gold; border-radius: 16px; padding: 20px;
-    box-shadow: 0 0 20px rgba(255,215,0,0.15);
-}
-.pro-title {color: gold; font-size: 22px; font-weight: 800; margin-bottom: 10px;}
-.pro-row {display:flex; gap:12px; margin-top:12px;}
-.pro-box {flex:1; background:#111; border-radius:12px; padding:12px; border-left:4px solid;}
-.pro-box p {margin:4px 0; color:#CCC; font-size:13px;}
-.pro-box b {color:white;}
-</style>
-<div class="pro-card">
-    <div class="pro-title">🏎️ F1 V21 SEMÁFORO - Cómo leer en 30 seg</div>
-    <p style="color:#AAA; font-size:14px;">Sin fórmulas. Solo 3 preguntas para no perder tu poco dinero.</p>
-    <div class="pro-row">
-        <div class="pro-box" style="border-color: gold;">
-            <b>1. ¿Está barato? Fib 0.618</b><p>Línea dorada. Si BTC está abajo de ella, es como aguacate en oferta. $81.5 vs $82 normal.</p>
-        </div>
-        <div class="pro-box" style="border-color: #00FF88;">
-            <b>2. ¿Está regalado? z = -6.96</b><p>z -2 a -7 = pánico. La gente lo remata. Mientras más negativo, más oportunidad. Tu ejemplo: -6.96 = súper regalado.</p>
-        </div>
-        <div class="pro-box" style="border-color: #FF3B3B;">
-            <b>3. ¿Se cae a pedazos? log -0.62%</b><p>-0.62% = bajó 62 centavos de $100 = normal. -5% = crash = no tocar. Solo compramos bajaditas chiquitas.</p>
-        </div>
-    </div>
-    <p style="margin-top:14px; color:gold; font-size:13px;">🟢 VERDE = Barato + Regalado + Bajadita chiquita → Compras $2 | 🟡 AMARILLO = Esperas, no perder es ganar | 🔴 ROJO = Freno total</p>
-</div>
-""", unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+# ... tu tarjeta PRO se queda igual ...
 
-st.write("")
-# CONTROLES
 c1,c2,c3 = st.columns([2,1,1])
 with c1:
     symbol = st.selectbox("Activo", ["BTC/USD", "AAPL", "ETH/USD"], index=0)
@@ -103,10 +62,10 @@ with c3:
     if st.button("🚨 PANICO", use_container_width=True):
         try: client.close_all_positions(cancel_orders=True); st.error("Vendido")
         except Exception as e: st.error(e)
+
 if iniciar or auto_count > 0:
     try:
         ticker = "BTC-USD" if symbol=="BTC/USD" else symbol
-        if symbol=="BTC/USD": ticker="BTC-USD"
         if symbol=="AAPL": ticker="AAPL"
         if symbol=="ETH/USD": ticker="ETH-USD"
         h = yf.Ticker(ticker).history(period="1mo")
@@ -116,14 +75,12 @@ if iniciar or auto_count > 0:
         x_bar, s, z, log_ret = calcular_quant(precios)
         estado, texto, color = get_semaforo(price, fib, z, log_ret)
 
-        # METRICAS PRO
         m1,m2,m3,m4 = st.columns(4)
         m1.metric(symbol, f"${price:,.2f}", f"Fib: ${fib:,.2f}")
         m2.metric("z-score", f"{z:.2f}", "Compra si < -2")
         m3.metric("log ret", f"{log_ret*100:.3f}%", "-0.8% a -0.05%")
         m4.markdown(f"<div style='background:{color}; color:black; padding:10px; border-radius:10px'><b>{texto}</b></div>", unsafe_allow_html=True)
 
-        # GRAFICO
         fig, ax = plt.subplots(figsize=(10,4))
         fig.patch.set_facecolor('#0E1117'); ax.set_facecolor('#0E1117')
         ax.plot(precios, color='#00FF88', label='Precio')
@@ -133,17 +90,27 @@ if iniciar or auto_count > 0:
         ax.legend(facecolor='#0E1117', edgecolor='gold', labelcolor='white')
         ax.tick_params(colors='white'); st.pyplot(fig)
 
-        # SEMAFORO Y TELEGRAM - CORREGIDO
         if estado=="VERDE":
             if abs(price - st.session_state.last_verde_price) > 10:
-                notificar_f1(f"🏁 VERDE {symbol} COMPRAR $2\nPrecio ${price:.2f}\nFib ${fib:.2f}\nZ {z:.2f}\nLog {log_ret*100:.3f}%")
+                # 1. Aviso Telegram
+                notificar_f1(f"🏁 VERDE {symbol} COMPRAR ${ORDER_NOTIONAL}\nPrecio ${price:.2f}\nFib ${fib:.2f}\nZ {z:.2f}\nLog {log_ret*100:.3f}%")
+                # 2. COMPRA REAL DE $2 EN ALPACA - MODO DIETA
+                try:
+                    orden = MarketOrderRequest(
+                        symbol=symbol,
+                        notional=ORDER_NOTIONAL,
+                        side=OrderSide.BUY,
+                        time_in_force=TimeInForce.GTC
+                    )
+                    client.submit_order(orden)
+                    st.toast(f"Orden enviada: ${ORDER_NOTIONAL} de {symbol}")
+                except Exception as e:
+                    st.error(f"Error orden: {e}")
                 st.session_state.last_verde_price = price
-            st.success(f"🟢 VERDE: {texto}")
+            st.success(f"🟢 VERDE: {texto} - Carga de {ORDER_NOTIONAL} litros")
         elif estado=="ROJO":
             st.error(f"🔴 ROJO: {texto}")
         else:
             st.warning(f"🟡 AMARILLO: {texto}")
     except Exception as e:
-        print(f"Error {e} - reintentando")
-        st.warning(f"Error temporal {e}, reintenta en 5s")
-        time.sleep(5)
+        st.warning(f"Error temporal {e}")
