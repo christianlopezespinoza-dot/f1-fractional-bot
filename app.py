@@ -1,9 +1,8 @@
 import streamlit as st
-st.set_page_config(page_title="F1 V47.1 ORDEN", layout="wide", page_icon="🏁")
+st.set_page_config(page_title="F1 V47.3 FINAL", layout="wide", page_icon="🏁")
 import yfinance as yf, numpy as np, matplotlib.pyplot as plt, requests
 from datetime import datetime, timedelta
 import os, json
-from matplotlib.patches import Rectangle
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
@@ -11,7 +10,7 @@ from bot_telegram import notificar_f1, responder_comandos
 from streamlit_autorefresh import st_autorefresh
 
 st_autorefresh(interval=15*60*1000, key="f1")
-for k,v in {"last_verde_price":0,"perfil_nombre":"ChristianLE","analizar":True,"last_update_id":0,"show_alpaca":True,"last_buy_time":None,"auto_pilot":True,"coins":130,"buys_today":0,"last_day":datetime.now().day,"mp_period":"1 dia"}.items():
+for k,v in {"last_verde_price":0,"perfil_nombre":"ChristianLE","analizar":True,"last_update_id":0,"show_alpaca":True,"last_buy_time":None,"auto_pilot":True,"coins":130,"buys_today":0,"last_day":datetime.now().day,"mp_period":"15 dias"}.items():
     if k not in st.session_state: st.session_state[k]=v
 responder_comandos()
 if st.session_state.last_day != datetime.now().day:
@@ -24,7 +23,6 @@ st.markdown("""
 .semaforo-box{border:1.5px solid #FFD700;border-radius:16px;padding:16px;background:#181B27;box-shadow:0 0 15px rgba(255,215,0,0.2);margin-bottom:14px}
 .box{border:1.5px solid #FFC800;background:rgba(255,200,0,0.08);padding:14px;border-radius:14px;min-height:85px;color:#E8E6D9}
 .backtest{border:1.5px solid #FFC800;background:#1C1A08;padding:18px;border-radius:14px;margin-top:12px;color:#E8E6D9}
-.port-card{border:1.5px solid #00FF88;background:#0B1A13;padding:12px;border-radius:12px;margin-bottom:10px}
 .equity-box{border:1.5px solid #00FF88;background:#0B1A13;padding:16px;border-radius:14px;margin-top:12px}
 .ultimate-bar{border:2px solid #FFD700;border-radius:14px;padding:12px 18px;background:linear-gradient(90deg,#0B0F1A 0%,#1A1A0B 100%);margin-bottom:12px;box-shadow:0 0 20px rgba(255,215,0,0.3)}
 .seguro-box{border:2px solid #00FF88;border-radius:14px;padding:14px;background:linear-gradient(90deg,#0B1A13 0%,#0F1A0B 100%);margin:12px 0}
@@ -38,11 +36,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-car_html = '<div style="position:relative;width:100%;height:122px;background:linear-gradient(90deg,#0F0F0F 0%,#1A1A1A 50%,#0F0F0F 100%);border:2px solid #FFD700;border-radius:16px;overflow:hidden;margin-bottom:10px;box-shadow:0 0 25px rgba(255,215,0,0.35)"><div style="position:absolute;top:8px;left:16px;color:#FFD700;font-weight:900;font-size:11px;z-index:10">🏁 V47.1 FINAL - ANALIZA ARRIBA - 2 GRAFICAS F1 - MP ABAJO DARK</div><div style="position:absolute;top:32px;right:-350px;animation:drive 5.5s linear infinite;font-size:60px;z-index:8">🏎️</div><div style="position:absolute;top:38px;left:72%;animation:coinFloat 0.9s infinite,coinCollect 5.5s infinite;font-size:26px;z-index:9">🪙</div><div style="position:absolute;top:40px;left:48%;animation:coinFloat 0.9s infinite 0.3s,coinCollect 5.5s infinite 1s;font-size:22px;z-index:9">🪙</div><div style="position:absolute;top:36px;left:24%;animation:coinFloat 0.9s infinite 0.6s,coinCollect 5.5s infinite 2s;font-size:24px;z-index:9">💎</div><div style="position:absolute;top:20px;left:22px;animation:flagwave 0.4s infinite alternate;font-size:42px;z-index:6">🏁</div><div style="position:absolute;bottom:10px;left:0;width:100%;height:6px;background:repeating-linear-gradient(90deg,white 0 22px,black 22px 44px);animation:road 0.3s linear infinite;z-index:2"></div></div>'
-st.markdown(car_html, unsafe_allow_html=True)
-
 A_KEY=st.secrets["alpaca"]["API_KEY"]; A_SECRET=st.secrets["alpaca"]["SECRET"]
 client=TradingClient(A_KEY,A_SECRET,paper=True)
+
+@st.cache_data(ttl=300)
+def get_market_fast(tk):
+    try:
+        t=yf.Ticker(tk)
+        return t.history(period="1mo"), t.history(period="1y")
+    except:
+        return None, None
 
 c0,c1,c2,c3=st.columns([2,1,1,0.8])
 with c0: symbol=st.selectbox("Activo",["BTC/USD","ETH/USD","AAPL","SOL/USD"],index=0,label_visibility="collapsed")
@@ -57,10 +60,14 @@ with c3: st.session_state.auto_pilot=st.toggle("🤖 Auto",value=st.session_stat
 
 mapa={"BTC/USD":"BTC-USD","ETH/USD":"ETH-USD","AAPL":"AAPL","SOL/USD":"SOL-USD"}
 tk=mapa[symbol]
-h=yf.Ticker(tk).history(period="1mo")
+h, h1y_df = get_market_fast(tk)
+if h is None or len(h)==0:
+    h=yf.Ticker(tk).history(period="1mo")
+    h1y_df=yf.Ticker(tk).history(period="1y")
+
 precios=h['Close'].values; high=h['High'].max(); low=h['Low'].min(); price=precios[-1]
 vol=h['Volume'].values if 'Volume' in h.columns and len(h['Volume'])>0 else np.ones(len(precios))
-h1y=yf.Ticker(tk).history(period="1y")['Close'].values
+h1y=h1y_df['Close'].values if len(h1y_df)>0 else precios
 xb=np.mean(precios); s=np.std(precios,ddof=1)
 z=(precios[-1]-xb)/(s/np.sqrt(len(precios))) if s>0 else -7.37
 lr=np.log(precios[-1]/precios[-2]) if precios[-2]>0 else -0.0061
@@ -70,11 +77,11 @@ ret24=np.log(precios[-1]/precios[-2])*100 if len(precios)>=2 else -0.61
 ret7=((price/precios[-7])-1)*100 if len(precios)>=7 else -0.26
 ret30=((price/precios[0])-1)*100; vsmax=((price/max1y)-1)*100
 
-delta = np.diff(precios); gain = np.where(delta>0, delta, 0); loss = np.where(delta<0, -delta, 0)
-avg_gain = np.mean(gain[-14:]) if len(gain)>=14 else 0.5; avg_loss = np.mean(loss[-14:]) if len(loss)>=14 else 0.5
-rs = avg_gain/(avg_loss+0.0001); rsi = 100 - (100/(1+rs))
-vol_avg = np.mean(vol[-20:]) if len(vol)>=20 else 1; vol_ratio = vol[-1]/vol_avg if vol_avg>0 else 1
-ema20 = np.mean(precios[-20:]) if len(precios)>=20 else xb; tendencia = "BAJISTA" if price < ema20 else "ALCISTA"
+delta=np.diff(precios); gain=np.where(delta>0,delta,0); loss=np.where(delta<0,-delta,0)
+avg_gain=np.mean(gain[-14:]) if len(gain)>=14 else 0.5; avg_loss=np.mean(loss[-14:]) if len(loss)>=14 else 0.5
+rs=avg_gain/(avg_loss+0.0001); rsi=100-(100/(1+rs))
+vol_avg=np.mean(vol[-20:]) if len(vol)>=20 else 1; vol_ratio=vol[-1]/vol_avg if vol_avg>0 else 1
+ema20=np.mean(precios[-20:]) if len(precios)>=20 else xb; tendencia="BAJISTA" if price<ema20 else "ALCISTA"
 
 casos=[]; g24=[]; g7=[]
 for i in range(30,len(h1y)-7):
@@ -94,14 +101,40 @@ else:
 
 orden_msg=""; seguro_msg=""; cooldown_ok=True; cooldown_pct=100
 if st.session_state.last_buy_time:
-    diff = datetime.now() - st.session_state.last_buy_time
-    cooldown_ok = diff > timedelta(hours=1)
+    diff=datetime.now()-st.session_state.last_buy_time
+    cooldown_ok=diff>timedelta(hours=1)
     if not cooldown_ok:
-        mins = 60 - int(diff.total_seconds()/60); cooldown_pct = int(diff.total_seconds()/3600*100); orden_msg = f"Cooldown {mins}min"
+        mins=60-int(diff.total_seconds()/60); cooldown_pct=int(diff.total_seconds()/3600*100); orden_msg=f"Cooldown {mins}min"
     else:
-        orden_msg = "Cooldown OK"; cooldown_pct=100
+        orden_msg="Cooldown OK"; cooldown_pct=100
 else:
     orden_msg="Listo para comprar"; cooldown_pct=100
+
+verde_on="#00FF88" if sema_color=="VERDE" else "#1A3A2A"
+amarillo_on="#FFD700" if sema_color=="AMARILLO" else "#3A3520"
+rojo_on="#FF4D4D" if sema_color=="ROJO" else "#3A1A1A"
+verde_shadow="0 0 18px #00FF88" if sema_color=="VERDE" else "none"
+amarillo_shadow="0 0 18px #FFD700" if sema_color=="AMARILLO" else "none"
+rojo_shadow="0 0 18px #FF4D4D" if sema_color=="ROJO" else "none"
+
+car_html=f'''
+<div style="position:relative;width:100%;height:132px;background:linear-gradient(90deg,#0F0F0F 0%,#1A1A1A 50%,#0F0F0F 100%);border:2px solid #FFD700;border-radius:16px;overflow:hidden;margin-bottom:12px;box-shadow:0 0 25px rgba(255,215,0,0.35)">
+ <div style="position:absolute;top:8px;left:16px;color:#FFD700;font-weight:900;font-size:11px;z-index:10">🏁 V47.3 FINAL - {sema_color} - 15 DIAS - FAST</div>
+ <div style="position:absolute;top:28px;left:18px;width:36px;height:78px;background:#0A0A0A;border:2px solid #2B2B2B;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:6px 0;z-index:10">
+  <div style="width:18px;height:18px;border-radius:50%;background:{rojo_on};box-shadow:{rojo_shadow};border:1px solid #222"></div>
+  <div style="width:18px;height:18px;border-radius:50%;background:{amarillo_on};box-shadow:{amarillo_shadow};border:1px solid #222"></div>
+  <div style="width:18px;height:18px;border-radius:50%;background:{verde_on};box-shadow:{verde_shadow};border:1px solid #222"></div>
+ </div>
+ <div style="position:absolute;top:30px;left:64px;font-size:28px;z-index:10">🚦</div>
+ <div style="position:absolute;top:32px;right:-350px;animation:drive 5.5s linear infinite;font-size:60px;z-index:8">🏎️</div>
+ <div style="position:absolute;top:38px;left:72%;animation:coinFloat 0.9s infinite,coinCollect 5.5s infinite;font-size:26px;z-index:9">🪙</div>
+ <div style="position:absolute;top:40px;left:48%;animation:coinFloat 0.9s infinite 0.3s,coinCollect 5.5s infinite 1s;font-size:22px;z-index:9">🪙</div>
+ <div style="position:absolute;top:36px;left:24%;animation:coinFloat 0.9s infinite 0.6s,coinCollect 5.5s infinite 2s;font-size:24px;z-index:9">💎</div>
+ <div style="position:absolute;top:20px;left:110px;animation:flagwave 0.4s infinite alternate;font-size:42px;z-index:6">🏁</div>
+ <div style="position:absolute;bottom:10px;left:0;width:100%;height:6px;background:repeating-linear-gradient(90deg,white 0 22px,black 22px 44px);animation:road 0.3s linear infinite;z-index:2"></div>
+</div>
+'''
+st.markdown(car_html, unsafe_allow_html=True)
 
 try:
     positions=client.get_all_positions(); account=client.get_account(); total=float(account.equity); cash=float(account.cash)
@@ -122,11 +155,11 @@ try:
     else:
         st.session_state.coins=130
 
-    st.markdown(f"<div class='ultimate-bar'><span style='color:#FFD700;font-weight:900;font-size:13px'>💎 V47.1 • {symbol} ${price:,.2f} • {sema_txt} • {orden_msg}</span> <span style='color:#8A93A8;float:right;font-weight:700;font-size:12px'>💰 ${total:,.2f} • 🪙 {st.session_state.coins} • 🔥 {heat_buys} • 🏆 {leader} • Hoy {st.session_state.buys_today}/5</span></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='ultimate-bar'><span style='color:#FFD700;font-weight:900;font-size:13px'>💎 V47.3 • {symbol} ${price:,.2f} • {sema_txt} • {orden_msg}</span> <span style='color:#8A93A8;float:right;font-weight:700;font-size:12px'>💰 ${total:,.2f} • 🪙 {st.session_state.coins} • 🔥 {heat_buys} • 🏆 {leader} • Hoy {st.session_state.buys_today}/5</span></div>", unsafe_allow_html=True)
 
     st.markdown(f"""
 <div class="semaforo-box">
- <div style="color:#FFD700;font-weight:900;font-size:16px">🏎️ F1 SEMÁFORO - IDEA PRINCIPAL ARRIBA {"🤖 AUTO ON" if st.session_state.auto_pilot else ""}</div>
+ <div style="color:#FFD700;font-weight:900;font-size:16px">🚦 F1 SEMÁFORO - LECTURA RÁPIDA {"🤖 AUTO ON" if st.session_state.auto_pilot else ""}</div>
  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
   <div style="border-left:3px solid #FFD700;background:#10131C;border-radius:12px;padding:12px"><div style="color:#F0F0F0;font-weight:700">1. ¿Barato? Fib</div><div style="color:#8A93A8;font-size:12px">${price:,.0f} vs ${fib:,.0f}</div></div>
   <div style="border-left:3px solid #00FF88;background:#10131C;border-radius:12px;padding:12px"><div style="color:#F0F0F0;font-weight:700">2. ¿Regalado? z={z:.2f}</div><div style="color:#8A93A8;font-size:12px">z={z:.2f}</div></div>
@@ -146,9 +179,9 @@ try:
     else: filtros_ok.append(f"🛑 Equity bajo")
     if st.session_state.buys_today < 5: filtros_ok.append(f"✅ Hoy {st.session_state.buys_today}/5")
     else: filtros_ok.append(f"🛑 Límite 5/día")
-    score_seguro = sum(1 for x in filtros_ok if "✅" in x)
-    puede_seguro = puede and cooldown_ok and score_seguro>=4 and total>95000 and st.session_state.buys_today<5 and rsi<50
-    col_seg = "#00FF88" if puede_seguro else "#FF4D4D"; txt_seg = "✅ PUEDE COMPRAR ASEGURADO" if puede_seguro else "⛔ ESPERA ASEGURADO"
+    score_seguro=sum(1 for x in filtros_ok if "✅" in x)
+    puede_seguro=puede and cooldown_ok and score_seguro>=4 and total>95000 and st.session_state.buys_today<5 and rsi<50
+    col_seg="#00FF88" if puede_seguro else "#FF4D4D"; txt_seg="✅ PUEDE COMPRAR ASEGURADO" if puede_seguro else "⛔ ESPERA ASEGURADO"
     st.markdown(f"<div class='seguro-box'><div style='color:#00FF88;font-weight:900'>🛡️ BOX ASEGURADO</div><div style='color:#E8E6D9;font-size:12px'>{' • '.join(filtros_ok)}</div><div style='margin-top:10px'><span style='color:#FFD700'>Score {score_seguro}/5</span> <span style='color:{col_seg};margin-left:12px'>{txt_seg}</span></div><div class='cooldown-bar'><div class='cooldown-fill' style='width:{cooldown_pct}%'></div></div></div>", unsafe_allow_html=True)
 
     if puede_seguro and (st.session_state.auto_pilot or st.session_state.analizar):
@@ -169,9 +202,8 @@ try:
 
     st.markdown(f"<div style='border:1.5px solid #FFD700;border-radius:14px;padding:10px 16px;background:#0B0F1A'><span style='color:#FFD700;font-size:12px'>💰 ALPACA PAPER Total ${total:,.2f} P/L {(total-100000):+.2f} {symbol} {orden_msg}{seguro_msg} 🪙 {st.session_state.coins} Heat {heat_buys} Leader {leader}</span></div>", unsafe_allow_html=True)
 
-    # GRAFICA 1 - PISTA INTERLAGOS
     if len(hist)>1:
-        st.markdown("<div class='equity-box'>🏁 GRAFICA 1: CIRCUIT INTERLAGOS HD - PISTA</div>", unsafe_allow_html=True)
+        st.markdown("<div class='equity-box'>🏁 CIRCUIT INTERLAGOS - EQUITY & HEATMAP</div>", unsafe_allow_html=True)
         eq_vals=np.array([h["eq"] for h in hist]); pnl=eq_vals[-1]-100000; pnl_pct=(eq_vals[-1]/100000-1)*100
         eq_min,eq_max=np.min(eq_vals),np.max(eq_vals); eq_norm=(eq_vals-eq_min)/(eq_max-eq_min+1) if eq_max!=eq_min else np.zeros_like(eq_vals)*0.5+0.5
         x=np.linspace(0,12,len(eq_vals)); track_center_y=np.sin(x*0.6)*0.5+np.sin(x*1.8)*0.25+np.cos(x*0.4)*0.15
@@ -197,13 +229,12 @@ try:
 
 except Exception as e: st.error(f"Alpaca: {e}")
 
-# GRAFICA 2 - NUESTRA
-bg_color = "#00FF88" if 'puede_seguro' in locals() and puede_seguro else "#2B2B2B"
-txt_color = "#000" if 'puede_seguro' in locals() and puede_seguro else "#8A93A8"
-status_txt = "ASEGURADO" if 'puede_seguro' in locals() and puede_seguro else "BLOQUEADO"
+bg_color="#00FF88" if 'puede_seguro' in locals() and puede_seguro else "#2B2B2B"
+txt_color="#000" if 'puede_seguro' in locals() and puede_seguro else "#8A93A8"
+status_txt="ASEGURADO" if 'puede_seguro' in locals() and puede_seguro else "BLOQUEADO"
 st.markdown(f"<div style='background:{bg_color};color:{txt_color};font-weight:900;padding:12px;border-radius:10px;text-align:center'>{sema_txt} {orden_msg} {status_txt}</div>", unsafe_allow_html=True)
 
-st.markdown("<div class='equity-box'>📈 GRAFICA 2: NUESTRA - BTC + FIB + MEDIA</div>", unsafe_allow_html=True)
+st.markdown("<div class='equity-box'>📈 BTC/USD - ANÁLISIS TÉCNICO</div>", unsafe_allow_html=True)
 fig,ax=plt.subplots(figsize=(10,4)); fig.patch.set_facecolor("#10131C"); ax.set_facecolor("#10131C")
 ax.plot(precios,color="#00FF87",linewidth=2.5); ax.axhline(xb,color="#3A8B8B",linewidth=1,alpha=0.8); ax.axhline(fib,color="#FFD500",ls="--",linewidth=1.2)
 ax.scatter([len(precios)-1],[price],s=120,color="#00FF4C",zorder=5,edgecolors="#10131C",linewidths=2)
@@ -217,86 +248,95 @@ with b3: st.markdown(f"<div class='box'>30D<br>{ret30:.2f}%</div>", unsafe_allow
 with b4: st.markdown(f"<div class='box'>MAX<br>{vsmax:.2f}%</div>", unsafe_allow_html=True)
 st.markdown(f"<div class='backtest'>BACKTEST {len(casos)} casos Prob {prob:.1f}% 24h {avg24:.2f}% 7d {avg7:.2f}% {sema_color} {sema_txt}</div>", unsafe_allow_html=True)
 # =========================================================
-# GRAFICA 3 - MERCADO PAGO ABAJO - DARK SIN FONDO BLANCO - MAS LLAMATIVA
+# MERCADO PAGO FAST - 15 DIAS - DARK - BOTONES AZUL + AMARILLO
 # =========================================================
 st.markdown("---")
-st.markdown("### 💳 GRAFICA 3: MERCADO PAGO - DARK LLAMATIVA SIN FONDO BLANCO")
 
-@st.cache_data(ttl=60)
-def get_coingecko_mp():
+@st.cache_data(ttl=120)
+def get_coingecko_fast():
     try:
-        r = requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,mxn&include_24hr_change=true", timeout=5).json()
+        r=requests.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,mxn&include_24hr_change=true", timeout=4).json()
         return r['bitcoin']['usd'], r['bitcoin']['mxn'], r['bitcoin'].get('usd_24h_change',0.82)
     except:
         return 81352, 1504696, 0.82
 
-@st.cache_data(ttl=120)
-def get_history_coingecko_mp(days, vs):
+@st.cache_data(ttl=300)
+def get_history_fast(days, vs):
     try:
-        url = f"https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency={vs}&days={days}"
-        data = requests.get(url, timeout=8).json()
-        return np.array([p[1] for p in data['prices']])
+        url=f"https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency={vs}&days={days}"
+        data=requests.get(url, timeout=5).json()
+        prices=np.array([p[1] for p in data['prices']])
+        if len(prices)>200:
+            step=len(prices)//150
+            prices=prices[::step]
+        return prices
     except:
         return None
 
-btc_usd_cg, btc_mxn_cg, ch24_cg = get_coingecko_mp()
-period_map_mp = {"1 dia":1, "1 semana":7, "1 mes":30, "1 año":365, "Todo":1825}
-yfinance_map = {"1 dia":"1d", "1 semana":"5d", "1 mes":"1mo", "1 año":"1y", "Todo":"5y"}
+btc_usd_cg, btc_mxn_cg, ch24_cg = get_coingecko_fast()
+period_map={"1 dia":1,"1 semana":7,"15 dias":15,"1 año":365,"Todo":1825}
 
-cols_mp = st.columns(5)
-for i, p in enumerate(period_map_mp.keys()):
+cols_mp=st.columns(5)
+for i,p in enumerate(period_map.keys()):
     with cols_mp[i]:
         if st.button(p, key=f"mp_{p}", use_container_width=True, type="primary" if st.session_state.mp_period==p else "secondary"):
             st.session_state.mp_period=p; st.rerun()
 
-sel_mp = st.session_state.mp_period
-days_mp = period_map_mp[sel_mp]
-prices_usd_mp = get_history_coingecko_mp(days_mp, "usd")
-prices_mxn_mp = get_history_coingecko_mp(days_mp, "mxn")
-if prices_usd_mp is None or len(prices_usd_mp) < 3:
-    try:
-        yf_period = yfinance_map.get(sel_mp, "1mo")
-        htmp_df = yf.Ticker("BTC-USD").history(period=yf_period)
-        if len(htmp_df) == 0:
-            htmp_df = yf.Ticker("BTC-USD").history(period="1mo")
-        htmp = htmp_df['Close'].values
-        prices_usd_mp = htmp
-        prices_mxn_mp = htmp * (btc_mxn_cg/btc_usd_cg)
-    except:
-        prices_usd_mp = np.linspace(btc_usd_cg*0.92, btc_usd_cg, 30)
-        prices_mxn_mp = prices_usd_mp * (btc_mxn_cg/btc_usd_cg)
+sel_mp=st.session_state.mp_period
+days_mp=period_map[sel_mp]
 
-prices_plot_mp = prices_mxn_mp
-change_mp = ((prices_plot_mp[-1]/prices_plot_mp[0])-1)*100 if len(prices_plot_mp)>1 else ch24_cg
-color_mp = "#00FF88" if change_mp>=0 else "#FF4D4D"
-txt_period_mp = {"1 dia":"Último día","1 semana":"Última semana","1 mes":"Último mes","1 año":"Último año","Todo":"Desde 2021"}[sel_mp]
+prices_usd_mp=get_history_fast(days_mp,"usd")
+prices_mxn_mp=get_history_fast(days_mp,"mxn")
 
-# CARD DARK SIN FONDO BLANCO - MAS LLAMATIVA
+if prices_usd_mp is None:
+    @st.cache_data(ttl=300)
+    def yf_fast_fallback(per):
+        try:
+            return yf.Ticker("BTC-USD").history(period=per)['Close'].values
+        except:
+            return np.linspace(80000,81352,50)
+    y_map={"1 dia":"5d","1 semana":"1mo","15 dias":"1mo","1 año":"1y","Todo":"5y"}
+    htmp=yf_fast_fallback(y_map.get(sel_mp,"1mo"))
+    prices_usd_mp=htmp
+    prices_mxn_mp=htmp*(btc_mxn_cg/btc_usd_cg)
+
+prices_plot_mp=prices_mxn_mp
+change_mp=((prices_plot_mp[-1]/prices_plot_mp[0])-1)*100 if len(prices_plot_mp)>1 else ch24_cg)
+color_mp="#00FF88" if change_mp>=0 else "#FF4D4D"
+txt_period_mp={"1 dia":"Último día","1 semana":"Última semana","15 dias":"Últimos 15 días","1 año":"Último año","Todo":"Desde 2021"}[sel_mp]
+
 st.markdown(f"""
 <div style="border:1.5px solid #009EE3;border-radius:16px;padding:16px;background:linear-gradient(90deg,#0B1420 0%,#10131C 100%);box-shadow:0 0 20px rgba(0,158,227,0.2);margin-bottom:12px">
- <div style="display:flex;align-items:center;gap:8px"><div style="background:#FF8C00;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px">₿</div><div><div style="font-weight:700;color:#E8E6D9">Bitcoin - Mercado Pago</div><div style="font-size:12px;color:#8A93A8">BTC 0.0 • DUAL CoinGecko + yfinance</div></div><div style="margin-left:auto;text-align:right"><div style="font-size:10px;color:#8A93A8">USD</div><div style="font-weight:800;color:#00FF88">${btc_usd_cg:,.0f}</div><div style="font-size:10px;color:#8A93A8">MXN</div><div style="font-weight:800;color:#FFD700">${btc_mxn_cg:,.0f}</div></div></div>
- <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:11px;color:#8A93A8">Precio actual DUAL</div><div style="font-size:18px;font-weight:800;color:white">$ {btc_mxn_cg:,.2f} MXN <span style="font-size:12px;color:#8A93A8">/ $ {btc_usd_cg:,.2f} USD</span></div></div><div style="text-align:right"><div style="color:{color_mp};font-weight:800;font-size:14px">{change_mp:+.2f}%</div><div style="font-size:11px;color:#8A93A8">{txt_period_mp}</div></div></div>
+ <div style="display:flex;align-items:center;gap:8px"><div style="background:#FF8C00;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:16px">₿</div><div><div style="font-weight:700;color:#E8E6D9">Bitcoin - Mercado Pago FAST</div><div style="font-size:12px;color:#8A93A8">BTC 0.0 • Cache 5min • {len(prices_plot_mp)} pts</div></div><div style="margin-left:auto;text-align:right"><div style="font-size:10px;color:#8A93A8">USD</div><div style="font-weight:800;color:#00FF88">${btc_usd_cg:,.0f}</div><div style="font-size:10px;color:#8A93A8">MXN</div><div style="font-weight:800;color:#FFD700">${btc_mxn_cg:,.0f}</div></div></div>
+ <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:11px;color:#8A93A8">Precio actual</div><div style="font-size:18px;font-weight:800;color:white">$ {btc_mxn_cg:,.2f} MXN <span style="font-size:12px;color:#8A93A8">/ $ {btc_usd_cg:,.2f} USD</span></div></div><div style="text-align:right"><div style="color:{color_mp};font-weight:800;font-size:14px">{change_mp:+.2f}%</div><div style="font-size:11px;color:#8A93A8">{txt_period_mp}</div></div></div>
 </div>
 """, unsafe_allow_html=True)
 
-# GRAFICA DARK SIN FONDO BLANCO - IGUAL QUE LAS TUYAS
-fig_mp, ax_mp = plt.subplots(figsize=(10,3.5))
+fig_mp, ax_mp=plt.subplots(figsize=(10,3.2))
 fig_mp.patch.set_facecolor("#10131C"); ax_mp.set_facecolor("#10131C")
-ax_mp.plot(prices_plot_mp, color=color_mp, linewidth=2.5)
-ax_mp.fill_between(range(len(prices_plot_mp)), prices_plot_mp, min(prices_plot_mp)*0.999, color=color_mp, alpha=0.15)
-ax_mp.scatter([len(prices_plot_mp)-1],[prices_plot_mp[-1]],s=120,color=color_mp,edgecolors="white",linewidths=2,zorder=5)
+ax_mp.plot(prices_plot_mp, color=color_mp, linewidth=2.2)
+ax_mp.fill_between(range(len(prices_plot_mp)), prices_plot_mp, min(prices_plot_mp)*0.999, color=color_mp, alpha=0.12)
+ax_mp.scatter([len(prices_plot_mp)-1],[prices_plot_mp[-1]],s=100,color=color_mp,edgecolors="white",linewidths=1.5,zorder=5)
 ax_mp.tick_params(colors="#6B7280",labelsize=8)
-ax_mp.grid(True, alpha=0.1, color="#2B2B2B")
+ax_mp.grid(True, alpha=0.08, color="#2B2B2B")
 for sp in ax_mp.spines.values(): sp.set_visible(False)
+fig_mp.tight_layout()
 st.pyplot(fig_mp, use_container_width=True)
 
-st.markdown(f"<div style='display:flex;justify-content:space-between;font-size:10px;color:#6B7280;margin-top:-10px;margin-bottom:14px'><span>Min $ {min(prices_plot_mp):,.0f}</span><span style='color:{color_mp};font-weight:700'>{change_mp:+.2f}% {txt_period_mp}</span><span>Max $ {max(prices_plot_mp):,.0f}</span></div>", unsafe_allow_html=True)
+st.markdown(f"<div style='display:flex;justify-content:space-between;font-size:10px;color:#6B7280;margin-top:-8px;margin-bottom:12px'><span>Min $ {min(prices_plot_mp):,.0f}</span><span style='color:{color_mp};font-weight:700'>{change_mp:+.2f}% {txt_period_mp} • FAST</span><span>Max $ {max(prices_plot_mp):,.0f}</span></div>", unsafe_allow_html=True)
 
-# 2 BOTONES AL FINAL - UNO MERCADO Y OTRO ALPACA
-col_mercado, col_alpaca = st.columns(2)
-with col_mercado:
-    st.link_button(f"💙 COMPRAR EN MERCADO PAGO - MXN ${btc_mxn_cg:,.0f} →", "https://www.mercadopago.com.mx/criptomonedas", use_container_width=True, type="primary")
-with col_alpaca:
-    st.link_button(f"🏦 COMPRAR EN ALPACA - USD ${btc_usd_cg:,.0f} →", "https://app.alpaca.markets/brokerage/dashboard/overview", use_container_width=True)
+# BOTONES AZUL SIN CORAZON + AMARILLO
+st.markdown(f"""
+<style>
+.btn-mp {{background:#009EE3;color:white!important;border-radius:12px;padding:14px;text-align:center;font-weight:800;font-size:14px;display:block;text-decoration:none;margin-bottom:8px;box-shadow:0 0 15px rgba(0,158,227,0.3);}}
+.btn-mp:hover {{background:#0081B8;color:white!important}}
+.btn-alpaca {{background:#FFD700;color:#000!important;border-radius:12px;padding:14px;text-align:center;font-weight:800;font-size:14px;display:block;text-decoration:none;margin-bottom:8px;box-shadow:0 0 15px rgba(255,215,0,0.3);}}
+.btn-alpaca:hover {{background:#FFC800;color:#000!important}}
+</style>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+ <a class="btn-mp" href="https://www.mercadopago.com.mx/criptomonedas" target="_blank">COMPRAR EN MERCADO PAGO - MXN ${btc_mxn_cg:,.0f} →</a>
+ <a class="btn-alpaca" href="https://app.alpaca.markets/brokerage/dashboard/overview" target="_blank">COMPRAR EN ALPACA - USD ${btc_usd_cg:,.0f} →</a>
+</div>
+""", unsafe_allow_html=True)
 
-st.caption("✅ Orden final: 1) Analiza arriba 2) Gráfica Pista 3) Gráfica Nuestra 4) Gráfica Mercado Dark llamativa abajo 5) 2 botones")
+st.caption("⚡ V47.3 FINAL • 15 días • FAST cache 5min • 🚦 + 🏎️ • Azul + Amarillo • Profesional sin GRAFICA X")
