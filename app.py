@@ -96,27 +96,27 @@ if st.session_state.analizar:
         st.markdown(f"### {texto} - {symbol} ${price:,.2f}")
         c1,c2,c3=st.columns(3)
         with c1:
-            st.markdown("**1. TREND MOMENTUM**")
+            st.markdown("**1. TREND MOMENTUM** `D≈ΔpA`")
             st.metric("z-score", f"{z:.2f}")
             st.metric("log-ret", f"{lr*100:.4f}%")
         with c2:
-            st.markdown("**2. RISK MGMT**")
+            st.markdown("**2. RISK MGMT** `R=k(P·σ)`")
             st.metric("ATR", f"${atr:.2f}")
             st.metric("Pos Size", f"{pos_size:.1f}")
         with c3:
-            st.markdown("**3. ORDER FLOW**")
+            st.markdown("**3. ORDER FLOW** `mv²/r`")
             st.metric("Fib 61.8%", f"${fib:,.2f}")
             st.metric("Dist Fib", f"{((price/fib)-1)*100:+.2f}%")
         c4,c5,c6=st.columns(3)
         with c4:
-            st.markdown("**4. VOLATILITY**")
+            st.markdown("**4. VOLATILITY** `σ≈√Σ(R-μ)²`")
             st.metric("sigma", f"${s:.2f}")
         with c5:
-            st.markdown("**5. ENTRY VS EXIT**")
+            st.markdown("**5. ENTRY VS EXIT** `R:R≥2:1`")
             st.metric("R:R", f"{rr:.2f}:1")
             st.caption(f"TP ${tp:.2f} SL ${sl:.2f}")
         with c6:
-            st.markdown("**6. P&L**")
+            st.markdown("**6. P&L** `Wins-Losses-Fees`")
             st.metric("WinRate", f"{win_rate*100:.1f}%")
             st.metric("Media", f"${xb:.2f}")
         st.markdown(f"<div style='background:{color};color:black;padding:14px;border-radius:10px;text-align:center;font-size:18px'><b>{texto} - {estado}</b></div>", unsafe_allow_html=True)
@@ -134,13 +134,13 @@ if st.session_state.analizar:
         mensaje_telegram = (
             f"🏁 F1 BOT PRO - {piloto}\n"
             f"Activo: {symbol} ${price:,.2f}\n"
-            f"{texto} | Estado: {estado}\n"
-            f"1.Momentum z {z:.2f} lr {lr*100:.3f}%\n"
-            f"2.Risk ATR ${atr:.2f} Pos {pos_size:.1f}\n"
-            f"3.Flow Fib ${fib:,.2f}\n"
-            f"4.Vol sigma ${s:.2f}\n"
-            f"5.R:R {rr:.2f}:1 TP ${tp:.2f} SL ${sl:.2f}\n"
-            f"6.P&L Media ${xb:.2f} WR {win_rate*100:.0f}%"
+            f"{texto} | {estado}\n"
+            f"1 D≈ΔpA z {z:.2f} lr {lr*100:.3f}%\n"
+            f"2 R=k(P·σ) ATR ${atr:.2f}\n"
+            f"3 mv²/r Fib ${fib:,.2f}\n"
+            f"4 σ≈√Σ(R-μ)² ${s:.2f}\n"
+            f"5 R:R≥2:1 {rr:.2f}:1 TP ${tp:.2f}\n"
+            f"6 P&L Media ${xb:.2f} WR {win_rate*100:.0f}%"
         )
         try:
             notificar_f1(mensaje_telegram)
