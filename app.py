@@ -301,7 +301,7 @@ if prices_usd_mp is None:
     prices_mxn_mp=htmp*(btc_mxn_cg/btc_usd_cg)
 
 prices_plot_mp=prices_mxn_mp
-change_mp=((prices_plot_mp[-1]/prices_plot_mp[0])-1)*100 if len(prices_plot_mp)>1 else ch24_cg)
+change_mp=(prices_plot_mp[-1]/prices_plot_mp[0]-1)*100 if len(prices_plot_mp)>1 else ch24_cg
 color_mp="#00FF88" if change_mp>=0 else "#FF4D4D"
 txt_period_mp={"1 dia":"Último día","1 semana":"Última semana","15 dias":"Últimos 15 días","1 año":"Último año","Todo":"Desde 2021"}[sel_mp]
 
@@ -325,7 +325,6 @@ st.pyplot(fig_mp, use_container_width=True)
 
 st.markdown(f"<div style='display:flex;justify-content:space-between;font-size:10px;color:#6B7280;margin-top:-8px;margin-bottom:12px'><span>Min $ {min(prices_plot_mp):,.0f}</span><span style='color:{color_mp};font-weight:700'>{change_mp:+.2f}% {txt_period_mp} • FAST</span><span>Max $ {max(prices_plot_mp):,.0f}</span></div>", unsafe_allow_html=True)
 
-# BOTONES AZUL SIN CORAZON + AMARILLO
 st.markdown(f"""
 <style>
 .btn-mp {{background:#009EE3;color:white!important;border-radius:12px;padding:14px;text-align:center;font-weight:800;font-size:14px;display:block;text-decoration:none;margin-bottom:8px;box-shadow:0 0 15px rgba(0,158,227,0.3);}}
@@ -339,4 +338,4 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-st.caption("⚡ V47.3 FINAL • 15 días • FAST cache 5min • 🚦 + 🏎️ • Azul + Amarillo • Profesional sin GRAFICA X")
+st.caption("⚡ V47.3 FINAL • 15 días • FAST cache 5min • 🚦 + 🏎️ • Azul + Amarillo • Profesional")
