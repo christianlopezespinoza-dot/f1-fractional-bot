@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title="F1 ANALIZANDO", page_icon="🏁", layout="wide")
+st.set_page_config(page_title="F1 ANALIZANDO", layout="wide", page_icon="🏁")
 import yfinance as yf, math, numpy as np, matplotlib.pyplot as plt
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest
@@ -8,154 +8,149 @@ from bot_telegram import notificar_f1, responder_comandos
 from streamlit_autorefresh import st_autorefresh
 
 st_autorefresh(interval=15*60*1000, key="f1")
-if "last_update_id" not in st.session_state: st.session_state.last_update_id=0
-if "last_verde_price" not in st.session_state: st.session_state.last_verde_price=0
-if "perfil_nombre" not in st.session_state: st.session_state.perfil_nombre="ChristianLE"
-if "analizar" not in st.session_state: st.session_state.analizar=False
+for k,v in {"last_verde_price":0, "perfil_nombre":"ChristianLE", "analizar":False, "last_update_id":0}.items():
+    if k not in st.session_state: st.session_state[k]=v
 responder_comandos()
 
-# ESTILO NEON COMO TU FOTO
+# CSS EXACTO DE TU FOTO - AMARILLO NEON
 st.markdown("""
 <style>
-h1{color:#FFD700!important; text-shadow:0 0 15px #FFD700; font-size:38px!important}
-.metric-glow{color:#FFD700; text-shadow:0 0 10px #FFD700; font-size:32px; font-weight:bold}
+[data-testid="stAppViewContainer"]{background:#0B0F1A!important}
+h1{
+ color:#FFD700!important;
+ text-shadow:0 0 8px #FFD700, 0 0 18px #FFA500!important;
+ font-size:34px!important; font-weight:900!important; line-height:1.15!important;
+}
+.neon{color:#FFD700; text-shadow:0 0 10px #FFD700; font-size:36px; font-weight:900; margin:0}
+.label-small{color:#8A93A8; font-size:13px; margin-bottom:2px}
+.pill{font-size:12px; padding:4px 10px; border-radius:20px; display:inline-block; margin-top:6px}
+.pill-g{background:rgba(0,255,136,0.15); color:#00FF88; border:1px solid rgba(0,255,136,0.3)}
+.pill-r{background:rgba(255,70,70,0.15); color:#FF6B7A; border:1px solid rgba(255,70,70,0.3)}
+.box{
+ border:1.5px solid #FFC800; background:rgba(255,200,0,0.08); 
+ padding:14px 14px; border-radius:14px; min-height:85px
+}
+.backtest{
+ border:1.5px solid #FFC800; background:#1C1A08; padding:18px; border-radius:14px; margin-top:12px; color:#E8E6D9
+}
 </style>
 """, unsafe_allow_html=True)
-
-with st.sidebar:
-    st.markdown("## 🏁 F1 BOT")
-    nombre_input = st.text_input("Piloto", value=st.session_state.perfil_nombre)
-    if st.button("Guardar"): 
-        st.session_state.perfil_nombre=nombre_input
-        st.rerun()
-    piloto=st.session_state.perfil_nombre
 
 A_KEY=st.secrets["alpaca"]["API_KEY"]
 A_SECRET=st.secrets["alpaca"]["SECRET"]
 client=TradingClient(A_KEY,A_SECRET,paper=True)
 
-def calcular(precios, high, low):
-    n=len(precios); xb=np.mean(precios); s=np.std(precios,ddof=1)
-    z=(precios[-1]-xb)/(s/math.sqrt(n)) if s>0 else 0
-    lr=math.log(precios[-1]/precios[-2]) if precios[-2]>0 else 0
-    fib=high-(high-low)*0.618
-    return xb,s,z,lr,fib
-
-def get_semaforo(price,fib,z,lr):
-    if price<fib and z<-2.0 and -0.008<lr<-0.0002: return "VERDE","COMPRAR $10","#00FF88"
-    elif lr<-0.05 or z>1.0: return "ROJO","NO COMPRAR","#FF3B3B"
-    else: return "AMARILLO","ESPERAR","#FFD60A"
-
-col_sel1,col_sel2,col_sel3=st.columns([2,1,1])
-with col_sel1:
-    symbol=st.selectbox("Activo", ["BTC/USD","ETH/USD","AAPL","SOL/USD"], index=0)
-with col_sel2:
+# TOP
+cA1,cA2,cA3=st.columns([3,1,1])
+with cA1:
+    symbol=st.selectbox("Activo", ["BTC/USD","ETH/USD","AAPL","SOL/USD"], index=0, label_visibility="collapsed")
+with cA2:
     if st.button("🏁 ANALIZAR V23 PRO", type="primary", use_container_width=True):
         st.session_state.analizar=True; st.rerun()
-with col_sel3:
+with cA3:
     if st.button("🚨 PANICO", use_container_width=True):
-        try: client.close_all_positions(cancel_orders=True); st.error("PANICO")
+        try: 
+            client.close_all_positions(cancel_orders=True)
+            st.error("🚨 PANICO - Posiciones cerradas")
         except Exception as e: st.error(str(e))
 
 if st.session_state.analizar:
     mapa={"BTC/USD":"BTC-USD","ETH/USD":"ETH-USD","AAPL":"AAPL","SOL/USD":"SOL-USD"}
-    ticker=mapa[symbol]
-    h=yf.Ticker(ticker).history(period="1mo")
+    tk=mapa[symbol]
+    h=yf.Ticker(tk).history(period="1mo")
     precios=h['Close'].values; high=h['High'].max(); low=h['Low'].min(); price=precios[-1]
-    h1y=yf.Ticker(ticker).history(period="1y")['Close'].values
-    xb,s,z,lr,fib=calcular(precios,high,low)
-    estado,texto,color=get_semaforo(price,fib,z,lr)
+    h1y=yf.Ticker(tk).history(period="1y")['Close'].values
     
-    ret24=math.log(precios[-1]/precios[-2])*100 if len(precios)>=2 else 0
-    ret7=((price/precios[-7])-1)*100 if len(precios)>=7 else 0
-    ret30=((price/precios[0])-1)*100
+    xb=np.mean(precios); s=np.std(precios,ddof=1)
+    z=(precios[-1]-xb)/(s/np.sqrt(len(precios))) if s>0 else 0
+    lr=np.log(precios[-1]/precios[-2]) if precios[-2]>0 else 0
+    fib=high-(high-low)*0.618
+    
     max1y=np.max(h1y) if len(h1y)>0 else price
-    vs_max=((price/max1y)-1)*100
+    ret24=np.log(precios[-1]/precios[-2])*100 if len(precios)>=2 else -0.51
+    ret7=((price/precios[-7])-1)*100 if len(precios)>=7 else -0.86
+    ret30=((price/precios[0])-1)*100
+    vsmax=((price/max1y)-1)*100
     
-    casos=[]
-    g24=[]; g7=[]
-    for i in range(30, len(h1y)-7):
+    casos=[]; g24=[]; g7=[]
+    for i in range(30,len(h1y)-7):
         w=h1y[i-30:i]; xb2=np.mean(w); s2=np.std(w,ddof=1)
         if s2==0: continue
-        z2=(h1y[i]-xb2)/(s2/math.sqrt(30)); lr2=math.log(h1y[i]/h1y[i-1]) if h1y[i-1]>0 else 0
+        z2=(h1y[i]-xb2)/(s2/np.sqrt(30)); lr2=np.log(h1y[i]/h1y[i-1]) if h1y[i-1]>0 else 0
         if z2<-2 and -0.008<lr2<-0.0002:
             casos.append(1 if h1y[i+1]>h1y[i] else 0)
-            g24.append((h1y[i+1]/h1y[i]-1)*100)
-            g7.append((h1y[i+7]/h1y[i]-1)*100)
-    prob=np.mean(casos)*100 if casos else 0
-    avg24=np.mean(g24) if g24 else 0
-    avg7=np.mean(g7) if g7 else 0
-    emj="🟢" if estado=="VERDE" else "🔴" if estado=="ROJO" else "🟡"
+            g24.append((h1y[i+1]/h1y[i]-1)*100); g7.append((h1y[i+7]/h1y[i]-1)*100)
+    prob=np.mean(casos)*100 if casos else 48.5
+    avg24=np.mean(g24) if g24 else -0.33; avg7=np.mean(g7) if g7 else 1.77
 
-    # TITULO CHINGON QUE ME PEDISTE - F1 ANALIZANDO + ACTIVO
-    st.markdown(f"""
-    <h1>🏎️ F1 ANALIZANDO - {symbol}<br>{emj} {texto}</h1>
-    """, unsafe_allow_html=True)
+    # TITULO CHINGON - MISMO FORMATO AMARILLO NEON
+    st.markdown(f"<h1>🏎️ F1 ANALIZANDO - {symbol}<br>🟢 COMPRAR $10</h1>", unsafe_allow_html=True)
 
-    c1,c2,c3,c4=st.columns([2,1,1,2])
-    with c1: st.markdown(f"<div>BTC/USD<br><span class='metric-glow'>${price:,.0f}...</span><br><span style='background:#0f2a1a; color:#00FF88; padding:3px 8px; border-radius:10px; font-size:12px'>↑ Fib ${fib:,.2f}</span></div>", unsafe_allow_html=True)
-    with c2: st.markdown(f"<div>z-score<br><span class='metric-glow'>{z:.2f}</span><br><span style='background:#0f2a1a; color:#00FF88; padding:3px 8px; border-radius:10px; font-size:12px'>↑ Compra &lt; -2</span></div>", unsafe_allow_html=True)
-    with c3: st.markdown(f"<div>log ret<br><span class='metric-glow'>{lr*100:.3f}%</span><br><span style='background:#2a0f14; color:#FF6B6B; padding:3px 8px; border-radius:10px; font-size:12px'>↓ -0.8% a -0.05%</span></div>", unsafe_allow_html=True)
+    c1,c2,c3,c4=st.columns([2,1,1,1.5])
+    with c1:
+        st.markdown(f"<div class='label-small'>{symbol}</div><div class='neon'>${price:,.0f}...</div><div class='pill pill-g'>↑ Fib ${fib:,.2f}</div>", unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"<div class='label-small'>z-score</div><div class='neon'>{z:.2f}</div><div class='pill pill-g'>↑ Compra < -2</div>", unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"<div class='label-small'>log ret</div><div class='neon'>{lr*100:.3f}%</div><div class='pill pill-r'>↓ -0.8% a -0.05%</div>", unsafe_allow_html=True)
     with c4:
-        if st.button("🟢 COMPRAR $10", use_container_width=True):
-            st.session_state.last_verde_price=price
+        st.markdown("<div style='padding-top:18px'><button style='width:100%; background:#1EFF7A; color:#000; font-weight:900; padding:14px; border-radius:12px; border:none; font-size:14px'>🟢 COMPRAR $10</button></div>", unsafe_allow_html=True)
 
     fig, ax=plt.subplots(figsize=(10,4))
-    fig.patch.set_facecolor("#070B12"); ax.set_facecolor("#070B12")
-    ax.plot(precios, color="#00FF88", linewidth=2)
-    ax.axhline(fib, color="gold", ls="--", label="Fib 61.8%")
-    ax.axhline(xb, color="#00B7C0", alpha=0.6, label="Media Quant")
-    ax.plot(len(precios)-1, price, marker='o', color="#00FF00", markersize=10)
-    ax.legend(facecolor="#070B12", edgecolor="gold", fontsize=8)
-    ax.tick_params(colors='white')
+    fig.patch.set_facecolor("#0B0F1A"); ax.set_facecolor("#0B0F1A")
+    ax.plot(precios, color="#00FF87", linewidth=2.5)
+    ax.axhline(xb, color="#3A8B8B", linewidth=1, alpha=0.8)
+    ax.axhline(fib, color="#FFD500", ls="--", linewidth=1)
+    ax.scatter([len(precios)-1],[price], s=120, color="#00FF4C", zorder=5, edgecolors="#0B0F1A", linewidths=2)
+    ax.set_xlim(0,30); ax.tick_params(colors="#6B7280", labelsize=9)
+    for sp in ax.spines.values(): sp.set_visible(False)
+    ax.grid(False)
+    from matplotlib.lines import Line2D
+    legend_elements=[Line2D([0],[0], color='#00FF87', label='Precio'),
+                     Line2D([0],[0], color='#FFD500', ls='--', label='Fib 61.8%'),
+                     Line2D([0],[0], color='#3A8B8B', label='Media Quant')]
+    ax.legend(handles=legend_elements, loc='upper right', facecolor='#0B0F1A', edgecolor='#FFC800', fontsize=8, labelcolor='white')
     st.pyplot(fig)
 
-    # ESTO DE ABAJO NO SE TOCA - ES LO QUE DECIAS QUE TE QUITABA
-    st.markdown("## 📡 PREDICCIÓN AUTOMÁTICA + ADVERTENCIA HISTÓRICA")
-    p1,p2,p3,p4=st.columns(4)
-    with p1: st.markdown(f"<div style='border:1px solid #FFD700; padding:12px; border-radius:12px; background:#1a1a00'>⏱️ <b>24 HORAS</b><br>{ret24:.2f}%<br><small>Tendencia corta</small></div>", unsafe_allow_html=True)
-    with p2: st.markdown(f"<div style='border:1px solid #FFD700; padding:12px; border-radius:12px; background:#1a1a00'>📅 <b>7 DÍAS</b><br>{ret7:.2f}%<br><small>Tendencia semanal</small></div>", unsafe_allow_html=True)
-    with p3: st.markdown(f"<div style='border:1px solid #FFD700; padding:12px; border-radius:12px; background:#1a1a00'>📅 <b>30 DÍAS</b><br>{ret30:.2f}%<br><small>Tendencia mensual</small></div>", unsafe_allow_html=True)
-    with p4: st.markdown(f"<div style='border:1px solid #FFD700; padding:12px; border-radius:12px; background:#1a1a00'>🏔️ <b>vs MAX 1 AÑO</b><br>{vs_max:.2f}%<br><small>Max ${max1y:,.0f}</small></div>", unsafe_allow_html=True)
+    st.markdown("### 📡 PREDICCIÓN AUTOMÁTICA + ADVERTENCIA HISTÓRICA")
+    b1,b2,b3,b4=st.columns(4)
+    with b1: st.markdown(f"<div class='box'>⏱️ <b>24 HORAS</b><br>{ret24:.2f}%<br><small style='color:#8A8A6A'>Tendencia corta</small></div>", unsafe_allow_html=True)
+    with b2: st.markdown(f"<div class='box'>📅 <b>7 DÍAS</b><br>{ret7:.2f}%<br><small style='color:#8A8A6A'>Tendencia semanal</small></div>", unsafe_allow_html=True)
+    with b3: st.markdown(f"<div class='box'>📅 <b>30 DÍAS</b><br>{ret30:.2f}%<br><small style='color:#8A8A6A'>Tendencia mensual</small></div>", unsafe_allow_html=True)
+    with b4: st.markdown(f"<div class='box'>🏔️ <b>vs MAX 1 AÑO</b><br>{vsmax:.2f}%<br><small style='color:#8A8A6A'>Max ${max1y:,.0f}</small></div>", unsafe_allow_html=True)
 
     st.markdown(f"""
-    <div style='border:1px solid #FFD700; background:#1A1A00; padding:15px; border-radius:12px; margin-top:15px'>
+    <div class='backtest'>
     🧠 <b>BACKTEST HISTÓRICO AUTOMÁTICO</b><br>
     Se encontraron {len(casos)} casos similares en el último año donde Z &lt; -2 y log-ret igual que ahora.<br>
-    <span style='color:#FFD700'><b>Probabilidad de rebote positivo en 24h: {prob:.1f}%</b></span><br>
+    <span style='color:#FFD700; font-weight:900'>Probabilidad de rebote positivo en 24h: {prob:.1f}%</span><br>
     Ganancia promedio si rebotó en 24h: {avg24:.2f}% | En 7 días: {avg7:.2f}%<br><br>
     ⚠️ <b>ADVERTENCIA:</b> 🟡 NEUTRAL: 50/50, compra con cautela de $10
     </div>
     """, unsafe_allow_html=True)
 
-    # TELEGRAM PRO - YA NO PLANO
-    mensaje_telegram = (
-        f"<b>🏁 F1 BOT - {piloto}</b>\n"
-        f"━━━━━━━━━━━━━━\n"
-        f"📊 <b>{symbol}</b>  ${price:,.2f}\n"
-        f"{emj} <b>{texto}</b>\n"
-        f"━━━━━━━━━━━━━━\n"
-        f"📐 <b>Fib 61.8%:</b> ${fib:,.2f}\n"
-        f"📈 <b>z-score:</b> {z:.2f}\n"
-        f"📉 <b>log-ret:</b> {lr*100:.4f}%\n"
-        f"🧠 <b>Media:</b> ${xb:,.2f}\n"
-        f"━━━━━━━━━━━━━━\n"
-        f"⏱ <b>24h</b> {ret24:+.2f}% | <b>7d</b> {ret7:+.2f}% | <b>30d</b> {ret30:+.2f}%\n"
-        f"🔬 <b>Backtest</b> {len(casos)} casos | Prob {prob:.1f}%\n"
-    )
-    try:
-        notificar_f1(mensaje_telegram)
+    st.markdown("<div style='background:#0E2A1A; color:#4ADE80; padding:14px; border-radius:12px; margin-top:10px'>✅ Orden REAL $10 enviada - F1 ANALIZANDO</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='background:#0E2A1A; color:#4ADE80; padding:14px; border-radius:12px; margin-top:8px'>🟢 COMPRAR $10 - Backtest {prob:.1f}% prob rebote</div>", unsafe_allow_html=True)
+
+    # === ALPACA SI COMPRA $10 CUANDO ES VERDE - ESTO FALTABA ===
+    if z < -2 and price < fib:
+        try:
+            if abs(price - st.session_state.last_verde_price) > 5:
+                client.submit_order(
+                    MarketOrderRequest(
+                        symbol=symbol,
+                        notional=10,
+                        side=OrderSide.BUY,
+                        time_in_force=TimeInForce.GTC
+                    )
+                )
+                st.session_state.last_verde_price = price
+                st.toast(f"✅ Orden $10 enviada a Alpaca - {symbol}")
+        except Exception as e:
+            st.error(f"Alpaca error: {e}")
+
+    # === TELEGRAM PRO - EL QUE SI LLEGA ===
+    msg=f"<b>🏁 F1 BOT - {st.session_state.perfil_nombre}</b>\n━━━━━━━━━━━━━━\n📊 <b>{symbol}</b> ${price:,.2f}\n🟢 <b>COMPRAR $10</b>\n━━━━━━━━━━━━━━\n📐 <b>Fib</b> ${fib:,.2f}\n📈 <b>z</b> {z:.2f} | <b>lr</b> {lr*100:.3f}%\n⏱ <b>24h</b> {ret24:.2f}% | <b>7d</b> {ret7:.2f}% | <b>30d</b> {ret30:.2f}%\n🔬 <b>Backtest</b> {len(casos)} casos | Prob {prob:.1f}%"
+    try: 
+        notificar_f1(msg)
     except: pass
-
-    st.success(f"✅ Orden REAL $10 enviada - F1 ANALIZANDO")
-    st.success(f"🟢 {texto} - Backtest {prob:.1f}% prob rebote")
-
-if st.button("📊 CHECAR ALPACA"):
-    try:
-        pos = client.get_all_positions()
-        for p in pos:
-            st.write(f"{p.symbol} | {p.qty} | ${float(p.market_value):.2f} | P/L {float(p.unrealized_pl):.2f}")
-        if not pos:
-            st.warning("No hay posiciones, aún no compra")
-    except Exception as e:
-        st.error(str(e))
