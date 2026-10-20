@@ -131,7 +131,7 @@ if iniciar or auto_count > 0:
     if estado=="VERDE":
         notificar_f1(symbol, "$2", price, tipo="verde", fib=fib, z=z, log=log_ret)
         st.success(f"✅ Señal VERDE detectada. Si fuera real, comprarías $2 de {symbol}. Sonido F1 largo enviado.")
-    elif estado=="ROJO":
+    elif estado=="ROJO":    
         notificar_f1(symbol, "$2", price, tipo="rojo", fib=fib, z=z, log=log_ret)
         st.error("🔴 ROJO - No comprar, te cuida tu dinero.")
     else:
