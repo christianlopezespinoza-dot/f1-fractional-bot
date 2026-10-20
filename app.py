@@ -143,3 +143,7 @@ if iniciar or auto_count > 0:
             st.error(f"🔴 ROJO: {texto}")
         else:
             st.warning(f"🟡 AMARILLO: {texto}")
+    except Exception as e:
+        print(f"Error {e} - reintentando")
+        st.warning(f"Error temporal {e}, reintenta en 5s")
+        time.sleep(5)
