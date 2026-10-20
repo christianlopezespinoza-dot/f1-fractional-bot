@@ -1,7 +1,8 @@
-streamlit-autorefresh
+streamlit
 yfinance
 requests
 alpaca-py
 matplotlib
 numpy
 pillow
+streamlit-autorefresh
