@@ -22,8 +22,8 @@ st.markdown("""
 .sema-card{border-radius:12px; padding:12px; background:#10131C; min-height:110px}
 .card-yellow{border-left:3px solid #FFD700}.card-green{border-left:3px solid #00FF88}.card-red{border-left:3px solid #FF4D4D}
 .sema-label{color:#F0F0F0; font-weight:700; font-size:14px}.sema-text{color:#8A93A8; font-size:12px; margin-top:6px}.sema-footer{color:#D4C44A; font-size:12px; margin-top:12px}
-/* NUMEROS EXACTOS COMO TU FOTO */
-.neon-yellow{color:#FFD700!important; text-shadow:0 0 10px #FFD700, 0 0 20px #FFA500!important; font-weight:900; font-size:38px; line-height:1; letter-spacing:-1px}
+/* SIN GLOW FUERTE */
+.neon-yellow{color:#FFD700!important; font-weight:900; font-size:38px; line-height:1; letter-spacing:-1px; text-shadow:none!important}
 .neon-small{font-size:12px; padding:4px 12px; border-radius:20px; display:inline-block; margin-top:6px; font-weight:700}
 .neon-green{background:rgba(0,255,136,0.15); color:#00FF88; border:1px solid rgba(0,255,136,0.35)}
 .neon-red{background:rgba(255,70,70,0.15); color:#FF6B7A; border:1px solid rgba(255,70,70,0.35)}
@@ -141,7 +141,7 @@ try:
 except Exception as e:
     st.error(f"Alpaca: {e}")
 
-# === NUMEROS EXACTOS COMO TU FOTO ===
+# NUMEROS EXACTOS COMO TU FOTO - SIN GLOW
 st.markdown(f"""
 <div style="display:grid; grid-template-columns: 1.2fr 0.6fr 0.7fr; gap:12px; margin:16px 0; align-items:start">
  <div><div class="neon-yellow">${price:,.0f}...</div><div class="neon-small neon-green">↑ Fib: ${fib:,.2f}</div></div>
@@ -175,6 +175,6 @@ st.markdown(f"<div class='verde-banner'>🟢 {sema_color}: {sema_txt} • {orden
 
 try:
     acc = client.get_account()
-    msg = (f"<b>🏁 F1 ESCUDERIA {st.session_state.perfil_nombre}</b>\n📊 <b>{symbol}</b> ${price:,.2f} • {sema_txt}\n🏦 Equity ${float(acc.equity):,.2f} • Cash ${float(acc.cash):,.2f}\n📐 Fib ${fib:,.2f} | z {z:.2f} | log {lr*100:.3f}%\n⏱ 24h {ret24:+.2f}% | 7d {ret7:+.2f}% | 30d {ret30:+.2f}%\n🔬 Backtest {len(casos)} Prob {prob:.1f}%\n🚦 {sema_color} | {orden_msg} | Auto {'ON' if st.session_state.auto_pilot else 'OFF'}\n")
+    msg = (f"<b>🏁 F1 ESCUDERIA {st.session_state.perfil_nombre}</b>\n📊 <b>{symbol}</b> ${price:,.2f} • {sema_txt}\n🏦 Equity ${float(acc.equity):,.2f}\n📐 Fib ${fib:,.2f} | z {z:.2f} | log {lr*100:.3f}%\n🚦 {sema_color} | {orden_msg} | Auto {'ON' if st.session_state.auto_pilot else 'OFF'}\n")
     notificar_f1(msg)
 except: pass
