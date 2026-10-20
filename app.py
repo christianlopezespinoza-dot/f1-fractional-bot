@@ -20,7 +20,7 @@ from datetime import datetime
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
-from bot_telegram import notificar_f1, responder_comandos
+from bot_telegram import notificar_f1, responder_comando
 from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="F1 V21 SEMAFORO PRO", page_icon="🏎️", layout="wide")
