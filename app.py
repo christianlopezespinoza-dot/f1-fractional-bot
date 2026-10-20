@@ -96,7 +96,7 @@ if st.session_state.get("analizar", False):
     estado,texto,color=get_semaforo(price,fib,z,lr)
     ret24,ret7,ret30,vs_max,max1y,ncasos,prob,avg24,avg7=prediccion_y_backtest(ticker,precios,z,lr)
 
-    st.markdown(f"# 🏎️ F1 V23 PRO HISTÓRICO - {symbol}\n## 🟢 {texto}")
+    st.markdown(f"# 🏁 F1 ANALIZANDO - {symbol}\n## 🟢 {texto} | ${price:,.2f}")🏎️
     m1,m2,m3,m4=st.columns([1.2,0.8,0.8,1])
     with m1: st.markdown(f"**{symbol}**\n\n# ${price:,.2f}\n\n🟢 Fib ${fib:,.2f}")
     with m2: st.markdown(f"**z-score**\n\n# {z:.2f}\n\n🟢 Compra < -2")
