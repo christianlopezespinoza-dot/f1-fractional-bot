@@ -120,12 +120,12 @@ if iniciar:
 
     # TELEGRAM SONIDO
     if estado=="VERDE":
-        telegram_msg(f"🟢 V21 VERDE {symbol} COMPRAR $2 Fib {fib:.2f} z {z:.2f} log {log_ret:.4f}", "verde")
-        st.success(f"✅ Señal VERDE detectada. Si fuera real, comprarías $2 de {symbol}. Sonido F1 largo enviado a Telegram.")
+        notificar_f1(symbol, "$2", price, tipo="verde", fib=fib, z=z, log=log_ret)
+        st.success(f"✅ Señal VERDE detectada. Si fuera real, comprarías $2 de {symbol}. Sonido F1 largo enviado.")
     elif estado=="ROJO":
-        telegram_msg(f"🔴 V21 ROJO {symbol} NO COMPRAR", "rojo")
+        notificar_f1(symbol, "$2", price, tipo="rojo", fib=fib, z=z, log=log_ret)
         st.error("🔴 ROJO - No comprar, te cuida tu dinero.")
     else:
-        st.warning("🟡 AMARILLO - Esperar. No perder también es ganar. No mandamos sonido para no spamear.")
+        st.warning("🟡 AMARILLO - Esperar. No perder también es ganar.")
 
     st.caption(f"z=(x̄-μ0)/(σ/√n) | log=ln(Pt/Pt-1) | V21 -0.008 conservador para $30 reales | {datetime.now().strftime('%H:%M:%S')}")
