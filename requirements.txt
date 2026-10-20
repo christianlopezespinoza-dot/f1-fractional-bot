@@ -1,4 +1,4 @@
-streamlit
+streamlit-autorefresh
 yfinance
 requests
 alpaca-py
