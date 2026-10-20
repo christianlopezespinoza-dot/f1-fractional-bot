@@ -22,10 +22,11 @@ st.markdown("""
 .sema-card{border-radius:12px; padding:12px; background:#10131C; min-height:110px}
 .card-yellow{border-left:3px solid #FFD700}.card-green{border-left:3px solid #00FF88}.card-red{border-left:3px solid #FF4D4D}
 .sema-label{color:#F0F0F0; font-weight:700; font-size:14px}.sema-text{color:#8A93A8; font-size:12px; margin-top:6px}.sema-footer{color:#D4C44A; font-size:12px; margin-top:12px}
-.neon-yellow{color:#FFD700!important; text-shadow:0 0 8px #FFD700, 0 0 15px #FFA500!important; font-weight:900; font-size:32px; line-height:1.1}
-.neon-small{font-size:12px; padding:3px 10px; border-radius:20px; display:inline-block; margin-top:4px; font-weight:700}
-.neon-green{background:rgba(0,255,136,0.15); color:#00FF88; border:1px solid rgba(0,255,136,0.3)}
-.neon-red{background:rgba(255,70,70,0.15); color:#FF6B7A; border:1px solid rgba(255,70,70,0.3)}
+/* NUMEROS EXACTOS COMO TU FOTO */
+.neon-yellow{color:#FFD700!important; text-shadow:0 0 10px #FFD700, 0 0 20px #FFA500!important; font-weight:900; font-size:38px; line-height:1; letter-spacing:-1px}
+.neon-small{font-size:12px; padding:4px 12px; border-radius:20px; display:inline-block; margin-top:6px; font-weight:700}
+.neon-green{background:rgba(0,255,136,0.15); color:#00FF88; border:1px solid rgba(0,255,136,0.35)}
+.neon-red{background:rgba(255,70,70,0.15); color:#FF6B7A; border:1px solid rgba(255,70,70,0.35)}
 .box{border:1.5px solid #FFC800; background:rgba(255,200,0,0.08); padding:14px; border-radius:14px; min-height:85px; color:#E8E6D9}
 .backtest{border:1.5px solid #FFC800; background:#1C1A08; padding:18px; border-radius:14px; margin-top:12px; color:#E8E6D9}
 .verde-banner{background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.3); color:#4ADE80; padding:12px; border-radius:10px; font-weight:700; margin-top:12px}
@@ -104,7 +105,6 @@ else:
     if not cooldown_ok and puede_comprar:
         orden_msg = f"⏳ Cooldown 1h - {st.session_state.last_buy_time.strftime('%H:%M')}"
 
-# SEMAFORO SIN V21
 st.markdown(f"""
 <div class="semaforo-box">
  <div class="semaforo-title">🏎️ F1 SEMÁFORO - Cómo leer en 30 seg {"🤖 AUTO ON" if st.session_state.auto_pilot else ""}</div>
@@ -118,7 +118,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# BARRA ALPACA
 try:
     positions = client.get_all_positions()
     account = client.get_account()
@@ -135,26 +134,23 @@ try:
         st.link_button("🔗 Abrir Dashboard Alpaca", "https://app.alpaca.markets/brokerage/dashboard/overview", use_container_width=True)
     if st.session_state.show_alpaca:
         st.markdown(f"<div class='port-card'>🏦 <b>Escudería {st.session_state.perfil_nombre}</b> • Equity ${total:,.2f} • Cash ${float(account.cash):,.2f} • Auto {'ON 🤖' if st.session_state.auto_pilot else 'OFF'}</div>", unsafe_allow_html=True)
-        st.markdown("### 📦 Posiciones Alpaca")
         for p in positions:
             pl = float(p.unrealized_pl)
             st.markdown(f"**{'🟢' if pl>=0 else '🔴'} {p.symbol}** {float(p.qty):.8f} • ${float(p.market_value):.2f} • P/L <span style='color:{'#00FF88' if pl>=0 else '#FF4D4D'}'>{pl:+.2f}</span>", unsafe_allow_html=True)
-        st.markdown("### 🧾 Últimas órdenes")
-        for o in list(client.get_orders())[:5]:
-            st.caption(f"{o.symbol} {o.side} ${o.notional} - {o.status} - {str(o.created_at)[:16]}")
+
 except Exception as e:
     st.error(f"Alpaca: {e}")
 
-# === NUMEROS EXACTAMENTE COMO TU FOTO $81,857... -5.88 -0.195% ===
-cA,cB,cC=st.columns(3)
-with cA: 
-    st.markdown(f"<div style='color:#8A93A8; font-size:13px; visibility:hidden'>.</div><div class='neon-yellow'>${price:,.0f}...</div><div class='neon-small neon-green'>↑ Fib: ${fib:,.2f}</div>", unsafe_allow_html=True)
-with cB: 
-    st.markdown(f"<div style='color:#8A93A8; font-size:13px; visibility:hidden'>.</div><div class='neon-yellow'>{z:.2f}</div><div class='neon-small neon-green'>↑ Compra si < -2</div>", unsafe_allow_html=True)
-with cC: 
-    st.markdown(f"<div style='color:#8A93A8; font-size:13px; visibility:hidden'>.</div><div class='neon-yellow'>{lr*100:.3f}%</div><div class='neon-small neon-red'>↓ -0.8% a -0.05%</div>", unsafe_allow_html=True)
+# === NUMEROS EXACTOS COMO TU FOTO ===
+st.markdown(f"""
+<div style="display:grid; grid-template-columns: 1.2fr 0.6fr 0.7fr; gap:12px; margin:16px 0; align-items:start">
+ <div><div class="neon-yellow">${price:,.0f}...</div><div class="neon-small neon-green">↑ Fib: ${fib:,.2f}</div></div>
+ <div><div class="neon-yellow">{z:.2f}</div><div class="neon-small neon-green">↑ Compra si < -2</div></div>
+ <div><div class="neon-yellow">{lr*100:.3f}%</div><div class="neon-small neon-red">↓ -0.8% a -0.05%</div></div>
+</div>
+""", unsafe_allow_html=True)
 
-st.markdown(f"<div style='padding-top:14px'><div style='background:{'#00FF88' if puede_comprar else '#2A2A2A'}; color:{'#000' if puede_comprar else '#888'}; font-weight:900; padding:12px; border-radius:10px; text-align:center'>{sema_txt} • {orden_msg}</div></div>", unsafe_allow_html=True)
+st.markdown(f"<div style='background:{'#00FF88' if puede_comprar else '#2A2A2A'}; color:{'#000' if puede_comprar else '#888'}; font-weight:900; padding:12px; border-radius:10px; text-align:center; margin-bottom:12px'>{sema_txt} • {orden_msg}</div>", unsafe_allow_html=True)
 
 fig, ax=plt.subplots(figsize=(10,4))
 fig.patch.set_facecolor("#10131C"); ax.set_facecolor("#10131C")
@@ -168,35 +164,17 @@ from matplotlib.lines import Line2D
 ax.legend(handles=[Line2D([0],[0], color='#00FF87', label='Precio'), Line2D([0],[0], color='#FFD500', ls='--', label='Fib'), Line2D([0],[0], color='#3A8B8B', label='Media')], loc='upper right', facecolor='#10131C', edgecolor='#FFC800', fontsize=8, labelcolor='white')
 st.pyplot(fig)
 
-st.markdown("### 📡 PREDICCIÓN AUTOMÁTICA + ADVERTENCIA HISTÓRICA")
 b1,b2,b3,b4=st.columns(4)
 with b1: st.markdown(f"<div class='box'>⏱️ <b>24 HORAS</b><br>{ret24:.2f}%</div>", unsafe_allow_html=True)
 with b2: st.markdown(f"<div class='box'>📅 <b>7 DÍAS</b><br>{ret7:.2f}%</div>", unsafe_allow_html=True)
 with b3: st.markdown(f"<div class='box'>📅 <b>30 DÍAS</b><br>{ret30:.2f}%</div>", unsafe_allow_html=True)
-with b4: st.markdown(f"<div class='box'>🏔️ <b>vs MAX 1 AÑO</b><br>{vsmax:.2f}%<br>Max ${max1y:,.0f}</div>", unsafe_allow_html=True)
+with b4: st.markdown(f"<div class='box'>🏔️ <b>vs MAX 1 AÑO</b><br>{vsmax:.2f}%</div>", unsafe_allow_html=True)
 
-st.markdown(f"""
-<div class='backtest'>
-🧠 <b>BACKTEST HISTÓRICO AUTOMÁTICO</b><br>
-Se encontraron {len(casos)} casos similares<br>
-<span style='color:#FFD700; font-weight:900'>Probabilidad de rebote positivo en 24h: {prob:.1f}%</span><br>
-Ganancia promedio 24h: {avg24:.2f}% | 7 días: {avg7:.2f}%<br><br>
-⚠️ <b>ADVERTENCIA:</b> {sema_color}: {sema_txt} • {orden_msg}
-</div>
-""", unsafe_allow_html=True)
-
+st.markdown(f"<div class='backtest'>🧠 <b>BACKTEST</b><br>{len(casos)} casos similares<br><span style='color:#FFD700; font-weight:900'>Prob rebote 24h: {prob:.1f}%</span> • 24h {avg24:.2f}% | 7d {avg7:.2f}%<br><br>⚠️ {sema_color}: {sema_txt} • {orden_msg}</div>", unsafe_allow_html=True)
 st.markdown(f"<div class='verde-banner'>🟢 {sema_color}: {sema_txt} • {orden_msg} • Auto {'🤖 ON' if st.session_state.auto_pilot else 'OFF'}</div>", unsafe_allow_html=True)
 
 try:
     acc = client.get_account()
-    msg = (
-        f"<b>🏁 F1 ESCUDERIA {st.session_state.perfil_nombre}</b>\n"
-        f"📊 <b>{symbol}</b> ${price:,.2f} • {sema_txt}\n"
-        f"🏦 Equity ${float(acc.equity):,.2f} • Cash ${float(acc.cash):,.2f}\n"
-        f"📐 Fib ${fib:,.2f} | z {z:.2f} | log {lr*100:.3f}%\n"
-        f"⏱ 24h {ret24:+.2f}% | 7d {ret7:+.2f}% | 30d {ret30:+.2f}%\n"
-        f"🔬 Backtest {len(casos)} casos Prob {prob:.1f}%\n"
-        f"🚦 {sema_color} | {orden_msg} | Auto {'ON' if st.session_state.auto_pilot else 'OFF'}\n"
-    )
+    msg = (f"<b>🏁 F1 ESCUDERIA {st.session_state.perfil_nombre}</b>\n📊 <b>{symbol}</b> ${price:,.2f} • {sema_txt}\n🏦 Equity ${float(acc.equity):,.2f} • Cash ${float(acc.cash):,.2f}\n📐 Fib ${fib:,.2f} | z {z:.2f} | log {lr*100:.3f}%\n⏱ 24h {ret24:+.2f}% | 7d {ret7:+.2f}% | 30d {ret30:+.2f}%\n🔬 Backtest {len(casos)} Prob {prob:.1f}%\n🚦 {sema_color} | {orden_msg} | Auto {'ON' if st.session_state.auto_pilot else 'OFF'}\n")
     notificar_f1(msg)
 except: pass
