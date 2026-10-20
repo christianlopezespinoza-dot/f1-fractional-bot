@@ -138,7 +138,7 @@ if iniciar or auto_count > 0:
         st.warning("🟡 AMARILLO - Esperar. No perder también es ganar.")
 
     st.caption(f"z=(x̄-μ0)/(σ/√n) | log=ln(Pt/Pt-1) | V21 -0.008 conservador para $30 reales | {datetime.now().strftime('%H:%M:%S')}")
-except Exception as e:
+    except Exception as e:
         print(f"Error {e} - reintentando")
         st.warning(f"Error temporal {e}, reintenta en 30s")
         time.sleep(5)
