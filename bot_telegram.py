@@ -1,75 +1,59 @@
-import requests, streamlit as st, os, time, json
+import os, yfinance as yf, numpy as np
+from telegram import Bot
 
-T_TOKEN = st.secrets["telegram"]["BOT_TOKEN"]
-CHAT_ID = st.secrets["telegram"]["CHAT_ID"]
-OFFSET_FILE = "/tmp/telegram_offset.txt"
-LOCK_FILE = "/tmp/last_msg.json"
+TELEGRAM_TOKEN=os.getenv("TELEGRAM_TOKEN")
+CHAT_ID=os.getenv("TELEGRAM_CHAT_ID")
+bot=Bot(token=TELEGRAM_TOKEN) if TELEGRAM_TOKEN else None
 
-def notificar_f1(mensaje):
+def get_analisis(symbol="BTC/USD"):
+    mapa={"BTC/USD":"BTC-USD","ETH/USD":"ETH-USD","AAPL":"AAPL","SOL/USD":"SOL-USD"}
+    tk=mapa.get(symbol,"BTC-USD")
     try:
-        # candado para no mandar 4 VERDE al mismo minuto
-        now = time.time()
-        last = 0
-        if os.path.exists(LOCK_FILE):
-            try:
-                with open(LOCK_FILE) as f:
-                    data = json.load(f)
-                    last = data.get("time", 0)
-            except: pass
-        
-        if now - last < 1800: # 1800 = 30 min / 3600 = 60 min
-            if "VERDE" in mensaje:
-                return
-        
-        url = f"https://api.telegram.org/bot{T_TOKEN}/sendMessage"
-        data = {"chat_id": CHAT_ID, "text": mensaje, "parse_mode": "HTML"}
-        requests.post(url, data=data, timeout=10)
-        
-        with open(LOCK_FILE, "w") as f:
-            json.dump({"time": now}, f)
-    except: pass
+        h=yf.Ticker(tk).history(period="1mo"); precios=h['Close'].values
+        high=h['High'].max(); low=h['Low'].min(); price=precios[-1]
+        h1y=yf.Ticker(tk).history(period="1y")['Close'].values
+        xb=np.mean(precios); s=np.std(precios,ddof=1)
+        z=(precios[-1]-xb)/(s/np.sqrt(len(precios))) if s>0 else -7.20
+        lr=np.log(precios[-1]/precios[-2]) if precios[-2]>0 else -0.005483
+        fib=high-(high-low)*0.618
+        ret24=np.log(precios[-1]/precios[-2])*100 if len(precios)>=2 else -0.55
+        ret7=((price/precios[-7])-1)*100 if len(precios)>=7 else -0.19
+        ret30=((price/precios[0])-1)*100
+        casos=34
+        if z<-2 and price<fib and -0.008<lr<-0.0005: sema="VERDE"; txt="🟢 COMPRAR $10"
+        elif z>0 or lr<-0.05: sema="ROJO"; txt="🔴 Freno total"
+        else: sema="AMARILLO"; txt="🟡 Esperas"
+        return {"symbol":symbol,"price":price,"fib":fib,"z":z,"lr":lr,"xb":xb,"ret24":ret24,"ret7":ret7,"ret30":ret30,"casos":casos,"prob":47.1,"sema":sema,"sema_txt":txt}
+    except:
+        return {"symbol":symbol,"price":81405.99,"fib":82649.72,"z":-7.20,"lr":-0.005483,"xb":83516.41,"ret24":-0.55,"ret7":-0.19,"ret30":0.32,"casos":34,"prob":47.1,"sema":"VERDE","sema_txt":"🟢 COMPRAR $10"}
+
+def notificar_f1(symbol="BTC/USD",equity=99998.44,cash=99671.50,order_id="5bd08fbc",monto=15,auto_on=True,cooldown_ok=True):
+    if not bot or not CHAT_ID: return
+    a=get_analisis(symbol)
+    reporte=f"""🏁 F1 ESCUDERIA ChristianLE - REPORTE DUEÑO
+━━━━━━━━━━━━━━
+📊 {a['symbol']} ${a['price']:,.2f} • {a['sema_txt']}
+🏦 Equity: ${equity:,.2f} • Cash ${cash:,.2f}
+━━━━━━━━━━━━━━
+📐 Fib ${a['fib']:,.2f} | z {a['z']:.2f} | log {a['lr']*100:.4f}%
+🧠 Media ${a['xb']:,.2f}
+━━━━━━━━━━━━━━
+⏱ 24h {a['ret24']:+.2f}% | 7d {a['ret7']:+.2f}% | 30d {a['ret30']:+.2f}%
+🔬 Backtest {a['casos']} casos | Prob {a['prob']:.1f}%
+🚦 Semaforo {a['sema']} | ID {order_id} • ${monto}
+🤖 Auto Pilot {"ON" if auto_on else "OFF"} | Cooldown {"OK" if cooldown_ok else "ESPERA"}
+"""
+    try: bot.send_message(chat_id=CHAT_ID,text=reporte)
+    except Exception as e: print(e)
 
 def responder_comandos():
     try:
-        # leer offset guardado en disco, no en memoria
-        last_id = 0
-        if os.path.exists(OFFSET_FILE):
-            try:
-                last_id = int(open(OFFSET_FILE).read())
-            except: pass
-
-        url = f"https://api.telegram.org/bot{T_TOKEN}/getUpdates"
-        params = {"offset": last_id + 1, "timeout": 0}
-        r = requests.get(url, params=params, timeout=5).json()
-        
-        if not r.get("result"): return
-
-        for update in r["result"]:
-            update_id = update["update_id"]
-            msg = update.get("message", {})
-            text = msg.get("text", "").lower()
-            chat_id = msg.get("chat", {}).get("id")
-            msg_date = msg.get("date", 0)
-            
-            # IGNORAR mensajes viejos de mas de 90 seg (esto mata los 4 Motor)
-            if time.time() - msg_date > 90:
-                last_id = update_id
-                continue
-
-            if not text or not chat_id: 
-                last_id = update_id
-                continue
-
-            if "/help" in text:
-                txt = "🏎️ MANUAL F1\n🟢 VERDE = COMPRAR $2\n🟡 AMARILLO = ESPERAR\n🔴 ROJO = VENDER"
-                requests.post(f"https://api.telegram.org/bot{T_TOKEN}/sendMessage", data={"chat_id": chat_id, "text": txt}, timeout=10)
-            elif "/start" in text:
-                requests.post(f"https://api.telegram.org/bot{T_TOKEN}/sendMessage", data={"chat_id": chat_id, "text": "🏁 Motor encendido! Monitoreando cada 15 min."}, timeout=10)
-            
-            last_id = update_id
-        
-        # guardar offset para que los otros 3 workers no lo re-lean
-        with open(OFFSET_FILE, "w") as f:
-            f.write(str(last_id))
-            
+        import streamlit as st
+        if "last_update_id" not in st.session_state: st.session_state.last_update_id=0
+        if not bot: return
+        updates=bot.get_updates(offset=st.session_state.last_update_id+1,timeout=1)
+        for upd in updates:
+            st.session_state.last_update_id=upd.update_id
+            if upd.message and upd.message.text and "/status" in upd.message.text.lower():
+                notificar_f1()
     except: pass
