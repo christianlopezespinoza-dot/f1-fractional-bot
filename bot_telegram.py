@@ -13,16 +13,25 @@ def notificar_f1(mensaje):
 
 def responder_comandos():
     try:
-        url = f"https://api.telegram.org/bot{T_TOKEN}/getUpdates"
-        r = requests.get(url, timeout=5).json()
-        if not r.get("result"): return
-        last = r["result"][-1]
-        text = last["message"]["text"].lower()
-        chat_id = last["message"]["chat"]["id"]
+        if "last_update_id" not in st.session_state:
+            st.session_state.last_update_id = 0
 
-        if "/help" in text:
-            msg = "🏎️ MANUAL F1 FRACTIONAL BYTE\n\n🟢 VERDE = COMPRO $2\n🟡 AMARILLO = No perder es ganar\n🔴 ROJO = Vendo\n\n/status /help /start"
-            requests.post(f"https://api.telegram.org/bot{T_TOKEN}/sendMessage", data={"chat_id": chat_id, "text": msg})
-        elif "/start" in text:
-            requests.post(f"https://api.telegram.org/bot{T_TOKEN}/sendMessage", data={"chat_id": chat_id, "text": "🏁 Motor encendido! Monitoreando cada 15 min."})
+        url = f"https://api.telegram.org/bot{T_TOKEN}/getUpdates"
+        params = {"offset": st.session_state.last_update_id + 1, "timeout": 0}
+        r = requests.get(url, params=params, timeout=5).json()
+        if not r.get("result"): return
+
+        for update in r["result"]:
+            st.session_state.last_update_id = update["update_id"]
+            msg = update.get("message", {})
+            text = msg.get("text", "").lower()
+            chat_id = msg.get("chat", {}).get("id")
+
+            if not text or not chat_id: continue
+
+            if "/help" in text:
+                txt = "🏎️ MANUAL F1 V21\n🟢 VERDE = COMPRAR $2\n🟡 AMARILLO = ESPERAR\n🔴 ROJO = VENDER\n\n/status /help /start"
+                requests.post(f"https://api.telegram.org/bot{T_TOKEN}/sendMessage", data={"chat_id": chat_id, "text": txt}, timeout=10)
+            elif "/start" in text:
+                requests.post(f"https://api.telegram.org/bot{T_TOKEN}/sendMessage", data={"chat_id": chat_id, "text": "🏁 Motor encendido! Monitoreando cada 15 min."}, timeout=10)
     except: pass
