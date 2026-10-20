@@ -25,8 +25,12 @@ from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(page_title="F1 V21 SEMAFORO PRO", page_icon="🏎️", layout="wide")
 auto_count = st_autorefresh(interval=15*60*1000, key="f1v21_auto")
-responder_comandos()
+if "last_update_id" not in st.session_state:
+    st.session_state.last_update_id = 0
+if "last_verde_price" not in st.session_state:
+    st.session_state.last_verde_price = 0
 
+responder_comando()
 # SECRETS
 A_KEY = st.secrets["alpaca"]["API_KEY"]
 A_SECRET = st.secrets["alpaca"]["SECRET"]
