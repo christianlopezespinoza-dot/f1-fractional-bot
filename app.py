@@ -30,7 +30,7 @@ if "last_update_id" not in st.session_state:
 if "last_verde_price" not in st.session_state:
     st.session_state.last_verde_price = 0
     
-responder_comando()
+responder_comandos()
 
 # SECRETS
 A_KEY = st.secrets["alpaca"]["API_KEY"]
