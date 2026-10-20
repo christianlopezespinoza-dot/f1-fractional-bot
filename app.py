@@ -120,26 +120,33 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# BARRA ALPACA + LOGICA VENTA 50% + EQUITY HIST
+# BARRA ALPACA + LOGICA VENTA 50% + EQUITY HIST + MARCAS TP PISTA
 try:
     positions = client.get_all_positions()
     account = client.get_account()
     total = float(account.equity)
-    pl_total = float(account.equity) - 100000  # vs inicial
+    pl_total = float(account.equity) - 100000
     pl_color = "#00FF88" if pl_total >=0 else "#FF4D4D"
-    
-    # GUARDAR EQUITY PARA GRAFICA
+
+    # ARCHIVOS
     equity_file = "equity_log.json"
+    tp_file = "tp_marks.json"
     hist = []
+    tp_marks = []
     if os.path.exists(equity_file):
         try:
             with open(equity_file, "r") as f: hist = json.load(f)
         except: hist=[]
+    if os.path.exists(tp_file):
+        try:
+            with open(tp_file, "r") as f: tp_marks = json.load(f)
+        except: tp_marks=[]
+
     hist.append({"t": datetime.now().strftime("%m-%d %H:%M"), "eq": total})
-    hist = hist[-100:]  # ultimos 100
+    hist = hist[-150:]
     with open(equity_file, "w") as f: json.dump(hist, f)
     
-    # VENTA AUTO 50% SI +2%
+    venta_msg = ""
     for p in positions:
         try:
             pct = float(p.unrealized_plpc) * 100 if hasattr(p, 'unrealized_plpc') else (float(p.unrealized_pl)/float(p.cost_basis)*100 if float(p.cost_basis)!=0 else 0)
@@ -147,10 +154,12 @@ try:
                 qty_vender = float(p.qty) * 0.5
                 if qty_vender > 0:
                     client.submit_order(MarketOrderRequest(symbol=p.symbol, qty=qty_vender, side=OrderSide.SELL, time_in_force=TimeInForce.GTC))
-                    venta_msg = f"💰 TakeProfit {p.symbol} +{pct:.2f}% vendió 50%"
-                    notificar_f1(f"<b>💰 TAKE PROFIT AUTO</b>\n{p.symbol} +{pct:.2f}% vendió 50% {qty_vender}\nEquity ${total:,.2f}")
-        except Exception as e:
-            pass
+                    venta_msg = f"💰 TakeProfit {p.symbol} +{pct:.2f}%"
+                    tp_marks.append({"idx": len(hist)-1, "symbol": p.symbol, "pct": pct, "eq": total, "t": datetime.now().strftime("%H:%M")})
+                    tp_marks = tp_marks[-20:]
+                    with open(tp_file, "w") as f: json.dump(tp_marks, f)
+                    notificar_f1(f"<b>💰 TAKE PROFIT + MARCA LLANTA</b>\n{p.symbol} +{pct:.2f}% vendió 50%\nVuelta {len(hist)} Equity ${total:,.2f}")
+        except: pass
 
     barra_txt = f"💰 ALPACA PAPER • Total ${total:,.2f} • P/L <span style='color:{pl_color}'>{pl_total:+.2f}</span> • {symbol} • {orden_msg} {venta_msg}"
     st.markdown(f"""<div style="border:1.5px solid #FFD700; border-radius:14px; padding:10px 16px; background:#0B0F1A; box-shadow:0 0 12px rgba(255,215,0,0.3); margin-bottom:10px"><span style="color:#FFD700; font-weight:800; font-size:12px">{barra_txt}</span> <span style="color:#8A93A8; font-size:10px; float:right">escudería {st.session_state.perfil_nombre}</span></div>""", unsafe_allow_html=True)
