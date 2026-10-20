@@ -17,7 +17,7 @@ def notificar_f1(mensaje):
                     last = data.get("time", 0)
             except: pass
         
-        if now - last < 900: # 15 min minimo entre VERDE
+        if now - last < 1800: # 1800 = 30 min / 3600 = 60 min
             if "VERDE" in mensaje:
                 return
         
@@ -29,7 +29,7 @@ def notificar_f1(mensaje):
             json.dump({"time": now}, f)
     except: pass
 
-def responder_comando():
+def responder_comandos():
     try:
         # leer offset guardado en disco, no en memoria
         last_id = 0
